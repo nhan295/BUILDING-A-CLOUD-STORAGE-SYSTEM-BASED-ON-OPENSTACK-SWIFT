@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "nodemon start server.js"
   },
   "keywords": [],
   "author": "",
@@ -13,5 +13,11 @@
     "eslint": "^9.37.0",
     "eslint-config-prettier": "^10.1.8",
     "prettier": "^3.6.2"
+  },
+  "dependencies": {
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0"
   }
 }
