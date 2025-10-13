@@ -1,8 +1,11 @@
-import dotenv from "dotenv";
-dotenv.config();
+require ('dotenv').config();
 
-export const SWIFT_CONFIG = {
-  authUrl: process.env.SWIFT_AUTH_URL,
-  user: process.env.ST_USER,
-  key: process.env.ST_KEY,
+module.exports = {
+  // openstack keystone
+  KEYSTONE_URL: process.env.KEYSTONE_URL || 'http://192.168.1.100:5000/v3',
+  KEYSTONR_VERSION: 'v3' , 
+
+  //openstack swift
+  SWIFT_URL: process.env.SWIFT_URL || 'http://192.168.1.100:8080/v1',
+
 };
