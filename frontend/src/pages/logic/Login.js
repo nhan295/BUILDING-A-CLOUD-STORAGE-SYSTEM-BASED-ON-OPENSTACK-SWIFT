@@ -1,23 +1,12 @@
 // User database from OpenStack Keystone
-const userDatabase = {
-  admin: {
-    password: 'ahkqSD2#',
-    domain: 'Default',
-    projects: ['admin'],
-    role: 'admin'
-  },
-  swiftuser: {
-    password: 'SWIFT_PASS',
-    domain: 'Default',
-    projects: ['swiftproject'],
-    role: 'member'
-  }
-};
 
-/**
- * Validate user credentials
- */
-export const validateLogin = (username, password, domain, project) => {
+import api from '../../../api'; // Adjust the import path as necessary
+
+
+//Validate user credentials
+ 
+export const handleLogin = async(username,password,project,domain) => {
+ try{
   if (!username.trim()) {
     return { success: false, message: 'Vui lòng nhập username' };
   }
@@ -29,63 +18,206 @@ export const validateLogin = (username, password, domain, project) => {
   if (!project) {
     return { success: false, message: 'Vui lòng chọn project' };
   }
+    const response = await api.post('/api/auth/login', { username, password, project, domain });
 
-  const user = userDatabase[username];
-  
-  if (!user) {
-    return { 
-      success: false, 
-      message: `User "${username}" không tồn tại` 
+    const data = response.data;
+    if(!response === 201){
+      return{
+        success: false,
+        mesage: data.message || 'Login failed'
+      }
+    }
+    if(data.data?.token){
+      localStorage.setItem('auth_token',data.data.token);
+      localStorage.setItem('user_info',JSON.stringify(data.data.user));
+      localStorage.setItem('project_info',JSON.stringify(data.data.project));
+      localStorage.setItem('roles',JSON.stringify(data.data.roles));
+      localStorage.setItem('available_projects', JSON.stringify(data.data.availableProjects));  
+
+    }
+    return{
+      success: true,
+      message: data.message || 'Login successful',
+      data: data.data
+    }
+ }catch(error){
+  console.error('Login error:', error);
+  return{
+    success: false,
+    message: `Error: ${error.message}`
+  }
+
+ };
+}
+
+export const handleLogout = async()=>{
+  try{
+    const token = localStorage.getItem('auth_token');
+    if(!token){
+      clearAuthStorage();
+      return { success: true, message: 'Logged out' }; 
+    }
+    const response = await api.post('/api/auth/logout',{
+      method: 'POST',
+      headers: {
+        'X-Auth-Token': token
+      }
+    });
+    clearAuthStorage();
+    if(!response.ok){
+      throw new Error('Logout failed');
+    }
+    return{
+      success: true,
+      message: 'Logged out successfully'
+    }
+  }catch(error){
+    clearAuthStorage();
+    console.error('Logout error:', error);
+    return{
+      success: false,
+      message: `Error: ${error.message}`
     }
   }
+}
 
-  if (user.password !== password) {
-    return { 
-      success: false, 
-      message: 'Password không chính xác' 
-    };
-  }
 
-  if (user.domain !== domain) {
-    return { 
-      success: false, 
-      message: `User không tồn tại trong domain "${domain}"` 
-    };
-  }
 
-  if (!user.projects.includes(project)) {
-    return { 
-      success: false, 
-      message: `User không có quyền truy cập project "${project}"` 
-    };
-  }
+//Validate token - Kiểm tra token còn hợp lệ không
+ 
+export const validateToken = async () => {
+  try {
+    const token = localStorage.getItem('auth_token');
 
-  return {
-    success: true,
-    message: 'Đăng nhập thành công!',
-    user: {
-      username,
-      project,
-      domain,
-      role: user.role,
-      timestamp: new Date().toLocaleTimeString('vi-VN')
+    if (!token) {
+      return { success: false, valid: false };
     }
-  };
-};
 
-/**
- * Get available projects for a user
- */
-export const getAvailableProjects = (username) => {
-  if (!username.trim() || !userDatabase[username]) {
-    return [];
+    const response = await api.get('/api/auth/validate', {
+      method: 'GET',
+      headers: {
+        'X-Auth-Token': token
+      }
+    });
+
+    if (!response.ok) {
+      clearAuthStorage();
+      return { success: false, valid: false };
+    }
+
+    const data = await response.data;
+    return {
+      success: true,
+      valid: data.data?.valid || true,
+      data: data.data
+    };
+
+  } catch (error) {
+    console.error('Validate token error:', error);
+    clearAuthStorage();
+    return { success: false, valid: false };
   }
-  return userDatabase[username].projects;
 };
 
-/**
- * Get all available domains
- */
+// Get user info - Lấy thông tin user
+
+export const getUserInfo = async () => {
+  try {
+    const token = localStorage.getItem('auth_token');
+
+    if (!token) {
+      return {
+        success: false,
+        message: 'Token không tìm thấy'
+      };
+    }
+
+    const response = await api.get('/api/auth/user', {
+      method: 'GET',
+      headers: {
+        'X-Auth-Token': token
+      }
+    });
+
+    const data = await response.data;
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: data.message || 'Không thể lấy thông tin user'
+      };
+    }
+
+    return {
+      success: true,
+      data: data.data
+    };
+
+  } catch (error) {
+    console.error('Get user info error:', error);
+    return {
+      success: false,
+      message: `Lỗi: ${error.message}`
+    };
+  }
+};
+
+
+//Check if user is logged in
+
+export const isLoggedIn = () => {
+  return !!localStorage.getItem('auth_token');
+};
+
+//Get stored user info
+export const getStoredUserInfo = () => {
+  const userInfo = localStorage.getItem('user_info');
+  return userInfo ? JSON.parse(userInfo) : null;
+};
+
+
+ // Get stored project info
+ 
+export const getStoredProjectInfo = () => {
+  const projectInfo = localStorage.getItem('project_info');
+  return projectInfo ? JSON.parse(projectInfo) : null;
+};
+
+
+//Get stored roles
+
+export const getStoredRoles = () => {
+  const roles = localStorage.getItem('roles');
+  return roles ? JSON.parse(roles) : [];
+};
+
+export const getAvailableProjects = () =>{
+  const projects = localStorage.getItem('available_projects')
+   return projects ? JSON.parse(projects) : [];
+}
+
 export const getAvailableDomains = () => {
   return ['Default'];
+};
+//Clear all auth data from localStorage
+ 
+const clearAuthStorage = () => {
+  localStorage.removeItem('auth_token');
+  localStorage.removeItem('user_info');
+  localStorage.removeItem('project_info');
+  localStorage.removeItem('roles');
+  localStorage.removeItem('available_projects');
+};
+
+export default {
+  handleLogin,
+  handleLogout,
+  validateToken,
+  getUserInfo,
+  isLoggedIn,
+  getStoredUserInfo,
+  getStoredProjectInfo,
+  getStoredRoles,
+  getAvailableProjects,
+  getAvailableDomains
 };
