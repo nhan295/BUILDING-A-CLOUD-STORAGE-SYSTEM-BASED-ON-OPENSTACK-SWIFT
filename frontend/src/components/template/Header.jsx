@@ -3,15 +3,21 @@ import { Search, User, Settings, LogOut, HelpCircle } from 'lucide-react';
 import '../../components/style/Header.css';
 import { handleLogout } from '../../components/logic/Header';
 import { useNavigate } from 'react-router-dom';
+import { getStoredUserInfo, getStoredProjectInfo, getStoredRoles } from '../../pages/logic/Login';
+
 export default function Header() {
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+
+  const user = getStoredUserInfo();
+  const project = getStoredProjectInfo();
+  const roles = getStoredRoles() || [];
+
+  const username = user?.username || 'Guest';
+  const projectName = project?.name || 'No Project';
+  const role = roles.includes('admin') ? 'admin' : 'user';
+
   const profileRef = useRef(null);
     const navigate = useNavigate();
-  // Mock user data - thay bằng data thực từ context/store
-  const user = {
-    username: 'John Doe',
-    email: 'john@example.com'
-  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -64,8 +70,9 @@ export default function Header() {
                     {user.username.charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <div className="user-name">{user.username}</div>
-                    <div className="user-email">{user.email}</div>
+                    <div className="user-name">{username}</div>
+                    <div className="user-email">Project: {projectName}</div>
+                    <div className="user-email">Role: {role}</div>
                   </div>
                 </div>
               </div>

@@ -1,14 +1,12 @@
 import { Cloud, HardDrive, Upload, Users, BarChart3, Settings, LogOut } from 'lucide-react';
-import { getStoredUserInfo, getStoredProjectInfo, getStoredRoles } from '../../pages/logic/Login';
+import { getStoredRoles } from '../../pages/logic/Login';
 import '../../components/style/SideBar.css';
 
 export default function SideBar() {
-  const user = getStoredUserInfo();
-  const project = getStoredProjectInfo();
+
   const roles = getStoredRoles() || [];
 
-  const username = user?.username || 'Guest';
-  const projectName = project?.name || 'No Project';
+
   const role = roles.includes('admin') ? 'admin' : 'user';
 
   return (
@@ -24,20 +22,6 @@ export default function SideBar() {
           </div>
         </div>
 
-        <div className="sidebar-info">
-          <div>
-            <label>Role</label>
-            <p className="value">{role}</p>
-          </div>
-          <div>
-            <label>User</label>
-            <p className="highlight">{username}</p>
-          </div>
-          <div>
-            <label>Project</label>
-            <p className="value">{projectName}</p>
-          </div>
-        </div>
       </div>
 
       <nav className="sidebar-nav">
