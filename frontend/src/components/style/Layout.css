@@ -1,0 +1,212 @@
+/* Layout.css */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.layout-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background: #f8fafc;
+    color: #1e293b;
+}
+
+/* Header styles - không chiếm phần sidebar */
+.layout-container > *:first-child {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    margin-left: 260px;
+    transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border-bottom: 1px solid #e2e8f0;
+}
+
+/* Body container */
+.layout-body {
+    display: flex;
+    flex: 1;
+    gap: 0;
+    position: relative;
+}
+
+/* Sidebar styles - fixed và full height */
+.layout-body > *:first-child {
+    width: 260px;
+    min-width: 260px;
+    background: #1e293b;
+    border-right: 1px solid #334155;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow-y: auto;
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1001;
+    color: #e2e8f0;
+}
+
+/* Content area */
+.layout-content {
+    flex: 1;
+    padding: 24px 32px;
+    overflow-y: auto;
+    background: #f8fafc;
+    min-height: calc(100vh - 64px);
+    color: #334155;
+}
+
+/* Scrollbar styling cho sidebar */
+.layout-body > *:first-child::-webkit-scrollbar {
+    width: 6px;
+}
+
+.layout-body > *:first-child::-webkit-scrollbar-track {
+    background: #0f172a;
+}
+
+.layout-body > *:first-child::-webkit-scrollbar-thumb {
+    background: #475569;
+    border-radius: 3px;
+}
+
+.layout-body > *:first-child::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+}
+
+/* Content scrollbar */
+.layout-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.layout-content::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+
+.layout-content::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+.layout-content::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Typography improvements */
+.layout-content h1,
+.layout-content h2,
+.layout-content h3 {
+    color: #0f172a;
+}
+
+.layout-content p {
+    color: #475569;
+    line-height: 1.6;
+}
+
+/* Responsive design */
+@media (max-width: 1024px) {
+    .layout-container > *:first-child {
+        margin-left: 220px;
+    }
+    
+    .layout-body > *:first-child {
+        width: 220px;
+        min-width: 220px;
+    }
+    
+    .layout-content {
+        padding: 20px 24px;
+    }
+}
+
+@media (max-width: 768px) {
+    .layout-container > *:first-child {
+        margin-left: 0;
+    }
+    
+    .layout-body > *:first-child {
+        left: -260px;
+        box-shadow: 4px 0 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    .layout-body > *:first-child.active {
+        left: 0;
+    }
+    
+    .layout-content {
+        padding: 16px 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .layout-content {
+        padding: 12px 16px;
+    }
+}
+
+/* Animation for smooth transitions */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.layout-content {
+    animation: slideIn 0.3s ease-out;
+}
+
+/* Optional: Overlay for mobile sidebar */
+@media (max-width: 768px) {
+    .layout-body::after {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(15, 23, 42, 0.6);
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s, visibility 0.3s;
+        z-index: 998;
+    }
+    
+    .layout-body.sidebar-open::after {
+        opacity: 1;
+        visibility: visible;
+    }
+}
+
+/* Link styles trong sidebar */
+.layout-body > *:first-child a {
+    color: #cbd5e1;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.layout-body > *:first-child a:hover {
+    color: #ffffff;
+}
+
+.layout-body > *:first-child a.active {
+    color: #60a5fa;
+}
+
+/* Card styles cho content */
+.layout-content .card {
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e2e8f0;
+}
