@@ -1,17 +1,12 @@
-/**
- * Auth Controller
- * Xử lý logic xác thực người dùng
- */
 const axios = require('axios');
 
 const { KEYSTONE_URL } = require('../config/swiftConfig');
-
 const AUTH_URL = `${KEYSTONE_URL}/auth/tokens`;
 const PROJECTS_URL = `${KEYSTONE_URL}/projects`;
 
-/**
- * Login - Xác thực user với Keystone
- */
+
+// Login - User authentication with Keystone
+
 exports.login = async (req, res) => {
   try {
     const { username, password, project, domain = 'Default' } = req.body;
@@ -71,7 +66,7 @@ exports.login = async (req, res) => {
       }));
     } catch (error) {
       console.error('Error fetching projects:', error.message);
-      // Nếu lỗi, trả về project hiện tại
+      // if error occurs, just return current project as available
       availableProjects = [{
         name: projectInfo.name,
         id: projectInfo.id
@@ -81,7 +76,7 @@ exports.login = async (req, res) => {
     // Prepare response
     return res.status(201).json({
       success: true,
-      message: '✓ Đăng nhập thành công!',
+      message: 'Login successfully',
       data: {
         token: token,
         user: {
@@ -105,28 +100,28 @@ exports.login = async (req, res) => {
     if (error.response?.status === 401) {
       return res.status(401).json({
         success: false,
-        message: '❌ Username hoặc password không chính xác'
+        message: 'Username or password not correct'
       });
     }
 
     if (error.code === 'ECONNREFUSED') {
       return res.status(503).json({
         success: false,
-        message: '❌ Không thể kết nối đến Keystone'
+        message: "Can't connect to Keystone"
       });
     }
 
     console.error('Login error:', error.message);
     return res.status(500).json({
       success: false,
-      message: `❌ Lỗi server: ${error.message}`
+      message: `Server error: ${error.message}`
     });
   }
 };
 
-/**
- * Logout - Xóa token từ Keystone
- */
+
+// Logout - delete token in Keystone
+
 exports.logout = async (req, res) => {
   try {
     const token = req.headers['x-auth-token'];
@@ -134,7 +129,7 @@ exports.logout = async (req, res) => {
     if (!token) {
       return res.status(400).json({
         success: false,
-        message: 'Token không tìm thấy'
+        message: 'Token not found'
       });
     }
 
@@ -145,21 +140,21 @@ exports.logout = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Đã đăng xuất'
+      message: 'Logout successfully'
     });
 
   } catch (error) {
     console.error('Logout error:', error.message);
     return res.status(500).json({
       success: false,
-      message: `Lỗi: ${error.message}`
+      message: `Error: ${error.message}`
     });
   }
 };
 
-/**
- * Get available projects for authenticated user
- */
+
+//Get available projects for authenticated user
+
 exports.getProjects = async (req, res) => {
   try {
     const token = req.headers['x-auth-token'];
@@ -167,7 +162,7 @@ exports.getProjects = async (req, res) => {
     if (!token) {
       return res.status(401).json({
         success: false,
-        message: 'Token không tìm thấy'
+        message: 'Token not foundy'
       });
     }
 
@@ -193,13 +188,13 @@ exports.getProjects = async (req, res) => {
     console.error('Get projects error:', error.message);
     return res.status(500).json({
       success: false,
-      message: `Lỗi: ${error.message}`
+      message: `Error: ${error.message}`
     });
   }
 };
 
 /**
- * Validate token - Kiểm tra token còn hợp lệ không
+ * Validate token - check if token is still valid
  */
 exports.validateToken = async (req, res) => {
   try {
@@ -208,7 +203,7 @@ exports.validateToken = async (req, res) => {
     if (!token) {
       return res.status(401).json({
         success: false,
-        message: 'Token không tìm thấy'
+        message: 'Token not found'
       });
     }
 
@@ -241,20 +236,20 @@ exports.validateToken = async (req, res) => {
     if (error.response?.status === 404) {
       return res.status(401).json({
         success: false,
-        message: 'Token không hợp lệ hoặc đã hết hạn'
+        message: 'Token is invalid or has expired'
       });
     }
 
     console.error('Validate token error:', error.message);
     return res.status(500).json({
       success: false,
-      message: `Lỗi: ${error.message}`
+      message: `Error: ${error.message}`
     });
   }
 };
 
 /**
- * Get user info - Lấy thông tin user
+ * Get user info - get user info from token
  */
 exports.getUserInfo = async (req, res) => {
   try {
@@ -263,7 +258,7 @@ exports.getUserInfo = async (req, res) => {
     if (!token) {
       return res.status(401).json({
         success: false,
-        message: 'Token không tìm thấy'
+        message: 'Token not found'
       });
     }
 
@@ -300,7 +295,7 @@ exports.getUserInfo = async (req, res) => {
     console.error('Get user info error:', error.message);
     return res.status(500).json({
       success: false,
-      message: `Lỗi: ${error.message}`
+      message: `Error: ${error.message}`
     });
   }
 };

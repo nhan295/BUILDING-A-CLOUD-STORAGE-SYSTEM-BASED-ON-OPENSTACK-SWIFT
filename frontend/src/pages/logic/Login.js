@@ -1,22 +1,19 @@
-// User database from OpenStack Keystone
-
 import api from '../../../api'; // Adjust the import path as necessary
-
 
 //Validate user credentials
  
 export const handleLogin = async(username,password,project,domain) => {
  try{
   if (!username.trim()) {
-    return { success: false, message: 'Vui lòng nhập username' };
+    return { success: false, message: 'Please enter username' };
   }
 
   if (!password) {
-    return { success: false, message: 'Vui lòng nhập password' };
+    return { success: false, message: 'Please enter password' };
   }
 
   if (!project) {
-    return { success: false, message: 'Vui lòng chọn project' };
+    return { success: false, message: 'Please enter project' };
   }
     const response = await api.post('/api/auth/login', { username, password, project, domain });
 
@@ -33,9 +30,10 @@ export const handleLogin = async(username,password,project,domain) => {
       localStorage.setItem('project_info',JSON.stringify(data.data.project));
       localStorage.setItem('roles',JSON.stringify(data.data.roles));
       localStorage.setItem('available_projects', JSON.stringify(data.data.availableProjects));  
-
     }
+    console.log('Login data:', data)
     return{
+      
       success: true,
       message: data.message || 'Login successful',
       data: data.data
@@ -50,40 +48,10 @@ export const handleLogin = async(username,password,project,domain) => {
  };
 }
 
-export const handleLogout = async()=>{
-  try{
-    const token = localStorage.getItem('auth_token');
-    if(!token){
-      clearAuthStorage();
-      return { success: true, message: 'Logged out' }; 
-    }
-    const response = await api.post('/api/auth/logout',{
-      method: 'POST',
-      headers: {
-        'X-Auth-Token': token
-      }
-    });
-    clearAuthStorage();
-    if(!response.ok){
-      throw new Error('Logout failed');
-    }
-    return{
-      success: true,
-      message: 'Logged out successfully'
-    }
-  }catch(error){
-    clearAuthStorage();
-    console.error('Logout error:', error);
-    return{
-      success: false,
-      message: `Error: ${error.message}`
-    }
-  }
-}
 
 
 
-//Validate token - Kiểm tra token còn hợp lệ không
+//Validate token - check if token is still valid
  
 export const validateToken = async () => {
   try {
@@ -119,7 +87,7 @@ export const validateToken = async () => {
   }
 };
 
-// Get user info - Lấy thông tin user
+// Get user info - get user info from token
 
 export const getUserInfo = async () => {
   try {
@@ -128,7 +96,7 @@ export const getUserInfo = async () => {
     if (!token) {
       return {
         success: false,
-        message: 'Token không tìm thấy'
+        message: 'Token not found'
       };
     }
 
@@ -144,7 +112,7 @@ export const getUserInfo = async () => {
     if (!response.ok) {
       return {
         success: false,
-        message: data.message || 'Không thể lấy thông tin user'
+        message: data.message || 'Can not get user info'
       };
     }
 
@@ -211,7 +179,6 @@ const clearAuthStorage = () => {
 
 export default {
   handleLogin,
-  handleLogout,
   validateToken,
   getUserInfo,
   isLoggedIn,
