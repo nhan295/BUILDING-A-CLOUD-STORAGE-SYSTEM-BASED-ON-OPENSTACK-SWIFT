@@ -48,9 +48,6 @@ export const handleLogin = async(username,password,project,domain) => {
  };
 }
 
-
-
-
 //Validate token - check if token is still valid
  
 export const validateToken = async () => {
