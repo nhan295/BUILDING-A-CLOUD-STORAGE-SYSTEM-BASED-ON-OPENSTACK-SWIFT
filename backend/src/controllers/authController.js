@@ -7,7 +7,7 @@ const PROJECTS_URL = `${KEYSTONE_URL}/projects`;
 
 // Login - User authentication with Keystone
 
-exports.login = async (req, res) => {
+const login = async (req, res) => {
   try {
     const { username, password, project, domain = 'Default' } = req.body;
 
@@ -122,7 +122,7 @@ exports.login = async (req, res) => {
 
 // Logout - delete token in Keystone
 
-exports.logout = async (req, res) => {
+const logout = async (req, res) => {
   try {
     const token = req.headers['x-auth-token'];
 
@@ -155,7 +155,7 @@ exports.logout = async (req, res) => {
 
 //Get available projects for authenticated user
 
-exports.getProjects = async (req, res) => {
+const getProjects = async (req, res) => {
   try {
     const token = req.headers['x-auth-token'];
 
@@ -193,65 +193,12 @@ exports.getProjects = async (req, res) => {
   }
 };
 
-/**
- * Validate token - check if token is still valid
- */
-exports.validateToken = async (req, res) => {
-  try {
-    const token = req.headers['x-auth-token'];
 
-    if (!token) {
-      return res.status(401).json({
-        success: false,
-        message: 'Token not found'
-      });
-    }
-
-    // Validate token with Keystone
-    const response = await axios.get(AUTH_URL, {
-      headers: { 'X-Auth-Token': token }
-    });
-
-    const tokenData = response.data.token;
-
-    return res.status(200).json({
-      success: true,
-      data: {
-        valid: true,
-        user: {
-          username: tokenData.user.name,
-          user_id: tokenData.user.id,
-          domain: tokenData.user.domain.name
-        },
-        project: {
-          name: tokenData.project.name,
-          id: tokenData.project.id
-        },
-        roles: tokenData.roles.map(role => role.name),
-        expires_at: tokenData.expires_at
-      }
-    });
-
-  } catch (error) {
-    if (error.response?.status === 404) {
-      return res.status(401).json({
-        success: false,
-        message: 'Token is invalid or has expired'
-      });
-    }
-
-    console.error('Validate token error:', error.message);
-    return res.status(500).json({
-      success: false,
-      message: `Error: ${error.message}`
-    });
-  }
-};
 
 /**
  * Get user info - get user info from token
  */
-exports.getUserInfo = async (req, res) => {
+const getUserInfo = async (req, res) => {
   try {
     const token = req.headers['x-auth-token'];
 
@@ -299,3 +246,10 @@ exports.getUserInfo = async (req, res) => {
     });
   }
 };
+
+module.exports = {
+  login,
+  logout,
+  getProjects,
+  getUserInfo
+}
