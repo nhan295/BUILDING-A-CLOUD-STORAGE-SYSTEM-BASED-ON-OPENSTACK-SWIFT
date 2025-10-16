@@ -5,6 +5,7 @@ const cookieParser = require("cookie-parser");
 const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
 const containerRoutes = require('./routes/containerRoutes')
+const objectRoutes = require('./routes/objectRoutes');
 
 const app = express();
 app.use(
@@ -19,6 +20,7 @@ app.use(cookieParser());
 authRoutes.setup(app);
 userRoutes.setup(app);
 containerRoutes.setup(app);
+objectRoutes.setup(app);
 
 
 app.use((req,res,next)=>{
