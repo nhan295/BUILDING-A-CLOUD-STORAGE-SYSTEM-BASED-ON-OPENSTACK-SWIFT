@@ -7,13 +7,11 @@ const getContainers = async (req, res) => {
     const projectId = req.project.id;
     const token = req.token;
 
-    const response = await axios.get(`${SWIFT_URL}/v1/$AUTH_${projectId}`, {
+    const response = await axios.get(`${SWIFT_URL}/AUTH_${projectId}`, {
       headers: { 'X-Auth-Token': token },
     });
 
-    const containers = response.data
-      ? response.data.split('\n').filter(Boolean)
-      : [];
+    const containers = response.data.map(c => c.name);
 
     return res.status(200).json({
       success: true,
@@ -34,19 +32,19 @@ const delContainer = async (req, res) => {
     const token = req.token; // từ middleware validateToken
     const projectId = req.project.id;
     const roles = req.roles;
-    const containerName = req.params.container;
+    const containerName = req.params.containerName;
 
-    // ✅ Kiểm tra role
-    if (!roles.includes('admin')) {
-      return res.status(403).json({
-        success: false,
-        message: 'You do not have permission to delete this container.',
-      });
-    }
+    // // ✅ Kiểm tra role
+    // if (!roles.includes('admin')) {
+    //   return res.status(403).json({
+    //     success: false,
+    //     message: 'You do not have permission to delete this container.',
+    //   });
+    // }
 
     // ✅ Gọi API Swift để xóa container
     const response = await axios.delete(
-      `${SWIFT_URL}/v1/AUTH_${projectId}/${containerName}`,
+      `${SWIFT_URL}/AUTH_${projectId}/${containerName}`,
       {
         headers: { 'X-Auth-Token': token },
       }
@@ -88,7 +86,7 @@ const createContainer = async (req, res) => {
 
     // Gọi Swift API tạo container
     const response = await axios.put(
-      `${SWIFT_URL}/v1/AUTH_${projectId}/${container}`,
+      `${SWIFT_URL}/AUTH_${projectId}/${container}`,
       null, // body không cần
       {
         headers: { 'X-Auth-Token': token },

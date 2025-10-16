@@ -4,6 +4,7 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
+const containerRoutes = require('./routes/containerRoutes')
 
 const app = express();
 app.use(
@@ -17,6 +18,8 @@ app.use(cookieParser());
 
 authRoutes.setup(app);
 userRoutes.setup(app);
+containerRoutes.setup(app);
+
 
 app.use((req,res,next)=>{
     console.log(`${req.method} ${req.path}`);
