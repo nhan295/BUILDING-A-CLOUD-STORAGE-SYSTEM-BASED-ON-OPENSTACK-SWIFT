@@ -6,6 +6,7 @@ const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
 const containerRoutes = require('./routes/containerRoutes')
 const objectRoutes = require('./routes/objectRoutes');
+const accountRoutes = require('./routes/accountRoutes');
 
 const app = express();
 app.use(
@@ -21,6 +22,7 @@ authRoutes.setup(app);
 userRoutes.setup(app);
 containerRoutes.setup(app);
 objectRoutes.setup(app);
+accountRoutes.setup(app);
 
 
 app.use((req,res,next)=>{
