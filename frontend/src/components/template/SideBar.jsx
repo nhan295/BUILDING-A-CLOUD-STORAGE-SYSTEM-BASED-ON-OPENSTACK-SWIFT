@@ -7,7 +7,7 @@ export default function SideBar() {
   const roles = getStoredRoles() || [];
 
 
-  const role = roles.includes('admin') ? 'admin' : 'user';
+  const role = roles.includes('admin') ? 'admin' : 'member';
 
   return (
     <div className="sidebar">

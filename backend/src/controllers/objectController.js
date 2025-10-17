@@ -1,4 +1,4 @@
-const SWIFT_URL = process.env.SWIFT_URL
+const { SWIFT_URL } = require('../config/swiftConfig');
 const axios = require('axios');
 
 const getObject = async(req,res)=>{

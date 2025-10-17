@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Container, Upload, HardDrive, Users, TrendingUp, Activity, Database, FileText, Folder } from 'lucide-react';
 import '../style/Dashboard.css';
+import { getStoredRoles } from '../../pages/logic/Login';
 
 export default function SwiftDashboard() {
   const [stats, setStats] = useState({
@@ -11,6 +12,9 @@ export default function SwiftDashboard() {
     bandwidth: 0,
     activeUsers: 0
   });
+  const roles = getStoredRoles() || [];
+  const role = roles.includes('admin') ? 'admin' : 'member'
+
 
   const [recentActivities, setRecentActivities] = useState([]);
   const [topContainers, setTopContainers] = useState([]);
@@ -58,6 +62,8 @@ export default function SwiftDashboard() {
   };
 
   return (
+  <div>
+    {role === 'admin' &&(
     <div className="swift-dashboard">
       <div className="dashboard-header">
         <h1>OpenStack Swift Dashboard</h1>
@@ -211,6 +217,8 @@ export default function SwiftDashboard() {
           </button>
         </div>
       </div>
+    </div>
+    )}
     </div>
   );
 }
