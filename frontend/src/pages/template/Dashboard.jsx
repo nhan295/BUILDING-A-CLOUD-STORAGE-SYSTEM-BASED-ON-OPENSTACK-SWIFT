@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Container, Upload, HardDrive, Users, TrendingUp, Activity, Database, FileText, Folder } from 'lucide-react';
 import '../style/Dashboard.css';
 import { getStoredRoles } from '../../pages/logic/Login';
+import {totalContainer} from '../../pages/logic/Dashboard';
 
 export default function SwiftDashboard() {
   const [stats, setStats] = useState({
@@ -14,21 +15,36 @@ export default function SwiftDashboard() {
   });
   const roles = getStoredRoles() || [];
   const role = roles.includes('admin') ? 'admin' : 'member'
-
+  
 
   const [recentActivities, setRecentActivities] = useState([]);
-  const [topContainers, setTopContainers] = useState([]);
 
-  useEffect(() => {
-    // Simulate fetching data
-    setStats({
-      totalStorage: 5000,
-      usedStorage: 3247,
-      containers: 42,
-      objects: 15847,
-      bandwidth: 2.3,
-      activeUsers: 28
-    });
+useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const totalCont = await totalContainer();
+        console.log('Total containers từ API:', totalCont);
+        
+        // Nếu muốn lấy tổng objects, cần loop qua tất cả containers
+        // Hoặc tạm thời dùng giá trị cố định
+        
+        setStats({
+          totalStorage: 5000,
+          usedStorage: 3247,
+          containers: totalCont, // ✅ Giá trị từ API
+          objects: 15847, // Tạm thời dùng số cố định
+          bandwidth: 2.3,
+          activeUsers: 28
+        });
+        
+        console.log('Stats sau khi set:', { containers: totalCont });
+      } catch(error) {
+        console.error('Lỗi khi fetch data:', error);
+      }
+    };
+    
+    
+    fetchData(); // Gọi hàm ở đây
 
     setRecentActivities([
       { id: 1, type: 'upload', user: 'admin@project.com', file: 'backup-2025.tar.gz', time: '5 phút trước', size: '2.4 GB' },
@@ -36,13 +52,6 @@ export default function SwiftDashboard() {
       { id: 3, type: 'download', user: 'dev@project.com', file: 'database-dump.sql', time: '28 phút trước', size: '1.2 GB' },
       { id: 4, type: 'upload', user: 'admin@project.com', file: 'images-archive.zip', time: '1 giờ trước', size: '3.8 GB' },
       { id: 5, type: 'create', user: 'user2@project.com', file: 'new-container', time: '2 giờ trước', size: '-' }
-    ]);
-
-    setTopContainers([
-      { name: 'backups', size: 1247, objects: 3421, usage: 85 },
-      { name: 'media-files', size: 892, objects: 8934, usage: 65 },
-      { name: 'logs', size: 634, objects: 2156, usage: 48 },
-      { name: 'databases', size: 474, objects: 1336, usage: 35 }
     ]);
   }, []);
 
@@ -101,34 +110,15 @@ export default function SwiftDashboard() {
             <div className="stat-info">
               <p className="stat-label">Containers</p>
               <p className="stat-value">{stats.containers}</p>
-              <p className="stat-sublabel">{stats.objects.toLocaleString()} objects</p>
+              <p className="stat-sublabel">{} objects</p>
             </div>
             <div className="stat-icon purple">
               <Container />
             </div>
           </div>
-          <div className="stat-footer">
-            <Database className="footer-icon" />
-            <span>Trung bình {Math.round(stats.objects / stats.containers)} objects/container</span>
-          </div>
         </div>
 
-        <div className="stat-card">
-          <div className="stat-card-content">
-            <div className="stat-info">
-              <p className="stat-label">Băng thông</p>
-              <p className="stat-value">{stats.bandwidth} GB/s</p>
-              <p className="stat-sublabel">{stats.activeUsers} người dùng hoạt động</p>
-            </div>
-            <div className="stat-icon green">
-              <Activity />
-            </div>
-          </div>
-          <div className="stat-footer">
-            <Users className="footer-icon" />
-            <span>Đang online</span>
-          </div>
-        </div>
+      
       </div>
 
       <div className="content-grid">
@@ -159,40 +149,7 @@ export default function SwiftDashboard() {
         </div>
 
         {/* Top Containers */}
-        <div className="content-card">
-          <div className="card-header">
-            <h2>Containers lớn nhất</h2>
-          </div>
-          <div className="card-body">
-            <div className="containers-list">
-              {topContainers.map((container, index) => (
-                <div key={index} className="container-item">
-                  <div className="container-header">
-                    <div className="container-name">
-                      <Container className="container-icon" />
-                      <span>{container.name}</span>
-                    </div>
-                    <span className="container-size">{formatSize(container.size)}</span>
-                  </div>
-                  <div className="container-info">
-                    <span>{container.objects.toLocaleString()} objects</span>
-                    <span>{container.usage}%</span>
-                  </div>
-                  <div className="container-progress">
-                    <div 
-                      className={`container-progress-fill ${
-                        container.usage > 70 ? 'danger' : 
-                        container.usage > 50 ? 'warning' : 
-                        'success'
-                      }`}
-                      style={{ width: `${container.usage}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+        
       </div>
 
       {/* Quick Actions */}
