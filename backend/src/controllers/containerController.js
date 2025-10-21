@@ -7,17 +7,46 @@ const getContainers = async (req, res) => {
     const projectId = req.project.id;
     const token = req.token;
 
-    const response = await axios.get(`${SWIFT_URL}/AUTH_${projectId}`, {
+    // 1️⃣ Lấy danh sách containers
+    const response = await axios.get(`${SWIFT_URL}/AUTH_${projectId}?format=json`, {
       headers: { 'X-Auth-Token': token },
     });
 
-    const containers = response.data.map(c => c.name);
+    const containers = response.data; // Swift trả dạng [{name, count, bytes}, ...]
 
+    // 2️⃣ Lấy thêm thông tin chi tiết cho từng container
+    const detailedContainers = await Promise.all(
+      containers.map(async (container) => {
+        try {
+          const headRes = await axios.head(
+            `${SWIFT_URL}/AUTH_${projectId}/${container.name}`,
+            {
+              headers: { 'X-Auth-Token': token },
+            }
+          );
+
+          const h = headRes.headers;
+          return {
+            name: container.name,
+            objects: parseInt(h['x-container-object-count'] || container.count || 0),
+            bytes: parseInt(h['x-container-bytes-used'] || container.bytes || 0),
+            last_modified: h['last-modified'] || null,
+            content_type: h['content-type'] || '',
+          };
+        } catch (e) {
+          console.error(`Error fetching info for container ${container.name}:`, e.message);
+          return { name: container.name, error: 'Failed to fetch details' };
+        }
+      })
+    );
+
+    // 3️⃣ Trả kết quả về client
     return res.status(200).json({
       success: true,
-      total_containers: containers.length,
-      containers,
+      total_containers: detailedContainers.length,
+      containers: detailedContainers,
     });
+
   } catch (error) {
     console.error('Get containers error:', error.message);
     return res.status(error.response?.status || 500).json({
@@ -33,14 +62,6 @@ const delContainer = async (req, res) => {
     const projectId = req.project.id;
     const roles = req.roles;
     const containerName = req.params.containerName;
-
-    // // ✅ Kiểm tra role
-    // if (!roles.includes('admin')) {
-    //   return res.status(403).json({
-    //     success: false,
-    //     message: 'You do not have permission to delete this container.',
-    //   });
-    // }
 
     // ✅ Gọi API Swift để xóa container
     const response = await axios.delete(
@@ -108,14 +129,13 @@ const createContainer = async (req, res) => {
   }
 }
 
-const renameContainer = async(req,res)=>{
+const getContainerInfo = async(req,res)=>{
 
 }
 
 module.exports = {
-    getContainers,
-    delContainer,
-    createContainer,
-    renameContainer
-
+  getContainers,
+  delContainer,
+  createContainer,
+  getContainerInfo
 }

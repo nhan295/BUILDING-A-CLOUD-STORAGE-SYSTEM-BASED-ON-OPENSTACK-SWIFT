@@ -20,3 +20,39 @@ export const createContainer = async(container)=>{
         throw error; 
     }
 }
+
+export const uploadFile = async (container, file) => {
+  try {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const res = await api.post(`/api/object/${container}/upload`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    return {
+      success: true,
+      data: res.data,
+    };
+  } catch (err) {
+    console.error("Upload file error:", err);
+
+    return {
+      success: false,
+      message:
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        err.message ||
+        "Unknown error",
+    };
+  }
+};
+
+
+export default {
+    getContainers,
+    createContainer,
+    uploadFile,
+}
