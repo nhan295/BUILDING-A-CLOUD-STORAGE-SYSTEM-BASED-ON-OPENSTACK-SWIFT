@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import "../style/ContainerManagement.css";
 import { getStoredRoles } from "../../pages/logic/Login";
-import { getContainers, createContainer } from "../../pages/logic/ContainerManagement";
+import { getContainers, createContainer, uploadFile } from "../../pages/logic/ContainerManagement";
 
 export default function SwiftContainerList() {
   const [containers, setContainers] = useState([]);
@@ -19,18 +19,22 @@ export default function SwiftContainerList() {
   const [isLoading, setIsLoading] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newContainerName, setNewContainerName] = useState("");
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [uploadingContainer, setUploadingContainer] = useState(null);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
 
   const roles = getStoredRoles() || [];
   const isAdmin = roles.includes("admin");
 
-  // 🧠 Load danh sách container
+  // Load danh sách container
   useEffect(() => {
     const fetchContainer = async () => {
       try {
         const data = await getContainers();
         console.log("API trả về containers:", data);
 
-        // API trả về mảng string => map lại thành object có name
         const list = data.map((name) => ({
           name,
           count: 0,
@@ -47,7 +51,7 @@ export default function SwiftContainerList() {
     fetchContainer();
   }, []);
 
-  // 🧮 Format dung lượng
+  // Format dung lượng
   const formatBytes = (bytes) => {
     if (bytes === 0) return "0 Bytes";
     const k = 1024;
@@ -56,12 +60,58 @@ export default function SwiftContainerList() {
     return (bytes / Math.pow(k, i)).toFixed(2) + " " + sizes[i];
   };
 
-  // 🔎 Lọc theo từ khóa tìm kiếm
+  // Lọc theo từ khóa tìm kiếm
   const filteredContainers = containers.filter(
     (container) =>
       container.name &&
       container.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const handleOpenUploadModal = (containerName) => {
+    setUploadingContainer(containerName);
+    setShowUploadModal(true);
+  };
+
+  const handleUploadFile = async () => {
+    if (!selectedFile || !uploadingContainer) {
+      alert("Vui lòng chọn file để tải lên");
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadProgress(0);
+
+    try {
+      const result = await uploadFile(uploadingContainer, selectedFile,setUploadProgress);
+
+      if (result.success) {
+        alert(`✅ Upload file "${selectedFile.name}" thành công!`);
+        
+        // Refresh container list
+        const data = await getContainers();
+        const list = data.map((name) => ({
+          name,
+          count: 0,
+          bytes: 0,
+          lastModified: new Date().toISOString().split("T")[0],
+        }));
+        setContainers(list);
+
+        // Reset modal
+        setShowUploadModal(false);
+        setSelectedFile(null);
+        setUploadingContainer(null);
+      } else {
+        alert(`❌ Upload thất bại: ${result.message}`);
+      }
+    } catch (error) {
+      console.error("Lỗi upload:", error);
+      alert("Có lỗi xảy ra khi upload file!");
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
+  };
 
   const handleSelectContainer = (containerName) => {
     setSelectedContainers((prev) =>
@@ -104,7 +154,6 @@ export default function SwiftContainerList() {
       } else {
         alert(`Không thể tạo container: ${res.message || 'Lỗi không xác định'}`);
       }
-
     } catch (error) {
       alert('Tạo container thất bại! Vui lòng thử lại.');
       console.error('Lỗi khi tạo container:', error);
@@ -112,7 +161,7 @@ export default function SwiftContainerList() {
       setNewContainerName("");
       setShowCreateModal(false);
     }
-};
+  };
 
   const handleDeleteSelected = () => {
     if (
@@ -235,7 +284,11 @@ export default function SwiftContainerList() {
                 <td>{container.lastModified}</td>
                 <td>
                   <div className="action-buttons">
-                  <button className="icon-btn" title="Tải lên">
+                    <button 
+                      className="icon-btn" 
+                      title="Tải lên"
+                      onClick={() => handleOpenUploadModal(container.name)}
+                    >
                       <Upload size={16} />
                     </button>
                     <button className="icon-btn" title="Tải xuống">
@@ -285,6 +338,36 @@ export default function SwiftContainerList() {
                 onClick={handleCreateContainer}
               >
                 Tạo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showUploadModal && (
+        <div className="modal-overlay" onClick={() => setShowUploadModal(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h2>Tải lên file vào container "{uploadingContainer}"</h2>
+
+            <input
+              type="file"
+              onChange={(e) => setSelectedFile(e.target.files[0])}
+              className="modal-input"
+            />
+
+            <div className="modal-actions">
+              <button
+                className="btn btn-secondary"
+                onClick={() => setShowUploadModal(false)}
+              >
+                Hủy
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={handleUploadFile}
+                disabled={!selectedFile || isUploading}
+              >
+                {isUploading ? `Đang tải lên... (${uploadProgress}%)` : "Tải lên"}
               </button>
             </div>
           </div>
