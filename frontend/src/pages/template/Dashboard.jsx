@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Container, Upload, HardDrive, Users, TrendingUp, Activity, Database, FileText, Folder } from 'lucide-react';
 import '../style/Dashboard.css';
 import { getStoredRoles } from '../../pages/logic/Login';
-import {totalContainer} from '../../pages/logic/Dashboard';
+import {totalContainer,totalProjectUser, projectSize} from '../../pages/logic/Dashboard';
 
 export default function SwiftDashboard() {
   const [stats, setStats] = useState({
@@ -10,7 +10,6 @@ export default function SwiftDashboard() {
     usedStorage: 0,
     containers: 0,
     objects: 0,
-    bandwidth: 0,
     activeUsers: 0
   });
   const roles = getStoredRoles() || [];
@@ -23,18 +22,20 @@ useEffect(() => {
     const fetchData = async () => {
       try {
         const totalCont = await totalContainer();
+        const totalUsers = await totalProjectUser();
+        const {bytes_used, quota_bytes} = await projectSize();
         console.log('Total containers từ API:', totalCont);
         
         // Nếu muốn lấy tổng objects, cần loop qua tất cả containers
         // Hoặc tạm thời dùng giá trị cố định
         
         setStats({
-          totalStorage: 5000,
-          usedStorage: 3247,
+          totalStorage: quota_bytes,
+          usedStorage: bytes_used,
           containers: totalCont, // ✅ Giá trị từ API
           objects: 15847, // Tạm thời dùng số cố định
-          bandwidth: 2.3,
-          activeUsers: 28
+          activeUsers: 28,
+          users: totalUsers //  Giá trị từ API
         });
         
         console.log('Stats sau khi set:', { containers: totalCont });
@@ -55,9 +56,11 @@ useEffect(() => {
     ]);
   }, []);
 
-  const formatSize = (gb) => {
-    if (gb >= 1000) return `${(gb / 1000).toFixed(1)} TB`;
-    return `${gb} GB`;
+  const formatSize = (bytes) => {
+    if (!bytes) return '0 GB';
+    const gb = bytes / (1024 ** 3); // chuyển từ bytes → gigabytes
+    if (gb >= 1000) return `${(gb / 1024).toFixed(2)} TB`;
+    return `${gb.toFixed(2)} GB`;
   };
 
   const getActivityIcon = (type) => {
@@ -74,11 +77,6 @@ useEffect(() => {
   <div>
     {role === 'admin' &&(
     <div className="swift-dashboard">
-      <div className="dashboard-header">
-        <h1>OpenStack Swift Dashboard</h1>
-        <p>Quản lý Object Storage - Project Scope</p>
-      </div>
-
       {/* Stats Cards */}
       <div className="stats-grid">
         <div className="stat-card">
@@ -110,10 +108,22 @@ useEffect(() => {
             <div className="stat-info">
               <p className="stat-label">Containers</p>
               <p className="stat-value">{stats.containers}</p>
-              <p className="stat-sublabel">{} objects</p>
+              <p className="stat-sublabel">{stats.objects} objects</p>
             </div>
             <div className="stat-icon purple">
               <Container />
+            </div>
+          </div>
+        </div>
+
+          <div className="stat-card">
+          <div className="stat-card-content">
+            <div className="stat-info">
+              <p className="stat-label">Users</p>
+              <p className="stat-value">{stats.users}</p>
+            </div>
+            <div className="stat-icon purple">
+              <Users />
             </div>
           </div>
         </div>
