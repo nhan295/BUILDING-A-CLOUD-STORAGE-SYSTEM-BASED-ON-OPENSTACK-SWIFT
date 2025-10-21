@@ -42,43 +42,47 @@ const getObject = async(req,res)=>{
   }
 }
 
-const newObject = async(req, res) => {
-   try {
+const newObject = async (req, res) => {
+  try {
     const token = req.token;
     const projectId = req.project.id;
     const containerName = req.params.container;
-    const { objectName, content } = req.body; // content có thể là string hoặc base64
+    const file = req.file; // multer tự parse
 
-    if (!containerName || !objectName || !content) {
+    if (!file) {
       return res.status(400).json({
         success: false,
-        message: 'Container name, object name and content are required',
+        message: "File is required",
       });
     }
 
+    const objectName = file.originalname;
+
     const response = await axios.put(
       `${SWIFT_URL}/AUTH_${projectId}/${containerName}/${objectName}`,
-      content,
+      file.buffer, // chính là nội dung file
       {
         headers: {
-          'X-Auth-Token': token,
-          'Content-Type': 'application/octet-stream',
+          "X-Auth-Token": token,
+          "Content-Type": file.mimetype || "application/octet-stream",
         },
       }
     );
 
     return res.status(201).json({
       success: true,
-      message: `Object "${objectName}" uploaded to container "${containerName}"`,
+      message: `File "${objectName}" uploaded to "${containerName}" successfully`,
+      etag: response.headers.etag,
     });
   } catch (error) {
-    console.error('Upload object error:', error.message);
+    console.error("Upload object error:", error.message);
     return res.status(error.response?.status || 500).json({
       success: false,
       message: error.response?.data || error.message,
     });
   }
-}
+};
+
 
 const delObject = async (req, res) => {
   try {

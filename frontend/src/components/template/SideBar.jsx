@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Cloud, HardDrive, Upload, Users, BarChart3, Settings, LogOut } from 'lucide-react';
+import { Cloud, HardDrive, Upload, Users, BarChart3, Settings, Clock } from 'lucide-react';
 import { getStoredRoles } from '../../pages/logic/Login';
 import '../../components/style/SideBar.css';
 
@@ -117,8 +117,8 @@ export default function SideBar() {
                 handleLinkClick('settings', '/settings');
               }}
             >
-              <Settings size={18} />
-              <span>Cấu hình</span>
+              <Clock size={18} />
+              <span>Activity Log</span>
             </a>
           </>
         )}
