@@ -29,11 +29,18 @@ export const handleLogin = async(username,password,project,domain) => {
       localStorage.setItem('user_info',JSON.stringify(data.data.user));
       localStorage.setItem('project_info',JSON.stringify(data.data.project));
       localStorage.setItem('roles',JSON.stringify(data.data.roles));
-      localStorage.setItem('available_projects', JSON.stringify(data.data.availableProjects));  
+      localStorage.setItem('available_projects', JSON.stringify(data.data.availableProjects));
+      
+      // Redirect dựa theo role
+      const roles = data.data.roles || [];
+      if (roles.includes('admin')) {
+        window.location.href = '/dashboard';
+      } else {
+        window.location.href = '/container-manager';
+      }
     }
     console.log('Login data:', data)
     return{
-      
       success: true,
       message: data.message || 'Login successful',
       data: data.data

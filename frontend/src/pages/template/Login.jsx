@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Cloud, Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { handleLogin, getAvailableDomains } from '../logic/Login.js';
 import '../style/Login.css';
-import { useNavigate } from "react-router-dom";
 
 export default function LoginPage() {
 
@@ -15,7 +14,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
-  const navigate = useNavigate();
 
   // Domains
   const availableDomains = getAvailableDomains();
@@ -52,7 +50,7 @@ export default function LoginPage() {
       setUsername('');
       setPassword('');
       setProject('');
-      navigate('/dashboard');
+      
     } else {
       setError(result.message);
     }
