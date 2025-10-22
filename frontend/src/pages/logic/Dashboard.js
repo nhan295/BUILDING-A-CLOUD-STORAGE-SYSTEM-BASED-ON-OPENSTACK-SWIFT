@@ -3,7 +3,7 @@ import api from '../../../api';
 export const totalContainer = async() => {
     try {
         const response = await api.get('/api/containers/');
-        return response.data.total_containers || 0; 
+        return response.data.containers || 0; 
     } catch (error) {
         console.error('Lỗi khi lấy danh sách container:', error);
         return 0; // Trả về 0 thay vì object

@@ -5,6 +5,7 @@ import Layout from './components/template/Layout.jsx'
 import UserManagement from './pages/template/UserManagement.jsx'
 import FileUpload from './pages/template/FileUpload.jsx'
 import ContainerManagement from './pages/template/ContainerManagement.jsx'
+import ProjectManagement from './pages/template/ProjectManagement.jsx'
 
 function App() {
 
@@ -17,6 +18,7 @@ function App() {
         <Route path="/user-manager" element={<UserManagement/>}/> 
         <Route path="/upload" element={<FileUpload/>}/>
         <Route path="/container-manager" element={<ContainerManagement/>}/>
+        <Route path="/project-manager" element={<ProjectManagement/>}/>
       </Route>
 
       
