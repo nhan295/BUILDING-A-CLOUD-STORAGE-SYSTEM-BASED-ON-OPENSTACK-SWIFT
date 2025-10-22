@@ -1,6 +1,7 @@
 const { SWIFT_URL } = require('../config/swiftConfig');
 const axios = require('axios');
-
+const JSZip = require('jszip');
+const fs = require('fs');
 
 const getContainers = async (req, res) => {
   try {
@@ -57,40 +58,65 @@ const getContainers = async (req, res) => {
 };
 
 const delContainer = async (req, res) => {
-   try {
-    const token = req.token; // từ middleware validateToken
+  try {
+    const token = req.token; // lấy từ middleware validateToken
     const projectId = req.project.id;
-    const roles = req.roles;
     const containerName = req.params.containerName;
 
-    // ✅ Gọi API Swift để xóa container
-    const response = await axios.delete(
-      `${SWIFT_URL}/AUTH_${projectId}/${containerName}`,
-      {
-        headers: { 'X-Auth-Token': token },
-      }
+    // 🧩 B1: Lấy danh sách object trong container
+    const listRes = await axios.get(
+      `${SWIFT_URL}/AUTH_${projectId}/${containerName}?format=json`,
+      { headers: { "X-Auth-Token": token } }
     );
+
+    const objects = listRes.data || [];
+
+    // 🧹 B2: Nếu có object thì xóa từng object
+    if (objects.length > 0) {
+      for (const obj of objects) {
+        await axios.delete(
+          `${SWIFT_URL}/AUTH_${projectId}/${containerName}/${encodeURIComponent(obj.name)}`,
+          { headers: { "X-Auth-Token": token } }
+        );
+      }
+    }
+
+    // 🧱 B3: Sau khi container trống → xóa container
+    await axios.delete(`${SWIFT_URL}/AUTH_${projectId}/${containerName}`, {
+      headers: { "X-Auth-Token": token },
+    });
 
     return res.status(200).json({
       success: true,
-      message: `Container "${containerName}" deleted successfully.`,
+      message:
+        objects.length > 0
+          ? `Đã xóa toàn bộ ${objects.length} object và container "${containerName}".`
+          : `Container "${containerName}" đã bị xóa.`,
     });
   } catch (error) {
-    console.error('Delete container error:', error.message);
+    console.error("Lỗi khi xóa container:", error.message);
 
     if (error.response?.status === 404) {
       return res.status(404).json({
         success: false,
-        message: 'Container not found or already deleted.',
+        message: "Container không tồn tại hoặc đã bị xóa.",
       });
     }
 
-    return res.status(error.response?.status || 500).json({
+    if (error.response?.status === 409) {
+      return res.status(409).json({
+        success: false,
+        message: "Container không rỗng. Vui lòng thử lại hoặc bật xóa toàn bộ.",
+      });
+    }
+
+    return res.status(500).json({
       success: false,
       message: error.response?.data || error.message,
     });
   }
-}
+};
+
 
 const createContainer = async (req, res) => {
    try {
@@ -129,13 +155,39 @@ const createContainer = async (req, res) => {
   }
 }
 
-const getContainerInfo = async(req,res)=>{
+const downloadContainer = async(req,res)=>{
+  const { containerName } = req.params;
+  const token = req.token;
+  const projectId = req.project.id;
 
+  try {
+    const listRes = await axios.get(`${SWIFT_URL}/AUTH_${projectId}/${containerName}?format=json`, {
+      headers: { 'X-Auth-Token': token }
+    });
+
+    const zip = new JSZip();
+
+    for (const obj of listRes.data) {
+      const fileRes = await axios.get(`${SWIFT_URL}/AUTH_${projectId}/${containerName}/${obj.name}`, {
+        headers: { 'X-Auth-Token': token },
+        responseType: 'arraybuffer'
+      });
+      zip.file(obj.name, fileRes.data);
+    }
+
+    const zipContent = await zip.generateAsync({ type: "nodebuffer" });
+    res.setHeader("Content-Disposition", `attachment; filename=${containerName}.zip`);
+    res.setHeader("Content-Type", "application/zip");
+    res.send(zipContent);
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
 }
 
 module.exports = {
   getContainers,
   delContainer,
   createContainer,
-  getContainerInfo
+  downloadContainer
 }

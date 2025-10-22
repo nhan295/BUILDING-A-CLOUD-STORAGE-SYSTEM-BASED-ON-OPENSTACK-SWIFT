@@ -64,10 +64,38 @@ export const delContainer = async(containerName)=>{
   }
 
 }
+export const downloadContainer = async(containerName) => {
+  try {
+    const response = await api.get(`/api/containers/download-container/${containerName}`, {
+      responseType: 'blob'
+    });
+
+    const blob = new Blob([response.data], { type: 'application/zip' });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${containerName}.zip`;
+    document.body.appendChild(link);
+    link.click();
+
+    // Dọn dẹp
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+    }, 1000);
+
+  } catch (error) {
+    console.error("Lỗi tải container:", error);
+    alert("❌ Không thể tải container!");
+  }
+};
+
 
 export default {
     getContainers,
     createContainer,
     uploadFile,
-    delContainer
+    delContainer,
+    downloadContainer
 }

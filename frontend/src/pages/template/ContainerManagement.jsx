@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import "../style/ContainerManagement.css";
 import { getStoredRoles } from "../../pages/logic/Login";
-import { getContainers, createContainer, uploadFile, delContainer } from "../../pages/logic/ContainerManagement";
+import { getContainers, createContainer, uploadFile, delContainer,downloadContainer } from "../../pages/logic/ContainerManagement";
 
 export default function SwiftContainerList() {
   const [containers, setContainers] = useState([]);
@@ -89,11 +89,11 @@ export default function SwiftContainerList() {
         
         // Refresh container list
         const data = await getContainers();
-        const list = data.map((name) => ({
-          name,
-          count: 0,
-          bytes: 0,
-          lastModified: new Date().toISOString().split("T")[0],
+        const list = data.map((item) => ({
+          name: item.name,
+          object: item.objects,
+          bytes: item.bytes,
+          lastModified: new Date(item.last_modified).toISOString().split("T")[0],
         }));
         setContainers(list);
 
@@ -190,6 +190,17 @@ export default function SwiftContainerList() {
       setSelectedContainers([]);
     }
   };
+
+const handleDownloadContainer = async (containerName) => {
+  try {
+    // Gọi hàm logic tải container
+    await downloadContainer(containerName);
+    console.log(`Đang tải container: ${containerName}`);
+  } catch (error) {
+    console.error("Lỗi khi tải container:", error);
+    alert("Không thể tải container!");
+  }
+};
 
   return (
     <div className="swift-container">
@@ -308,7 +319,10 @@ export default function SwiftContainerList() {
                     >
                       <Upload size={16} />
                     </button>
-                    <button className="icon-btn" title="Tải xuống">
+                    <button 
+                    className="icon-btn" 
+                    title="Tải xuống"
+                    onClick={()=>handleDownloadContainer(container.name)}>
                       <Download size={16} />
                     </button>
                     {isAdmin && (
