@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import "../style/ContainerManagement.css";
 import { getStoredRoles } from "../../pages/logic/Login";
-import { getContainers, createContainer, uploadFile } from "../../pages/logic/ContainerManagement";
+import { getContainers, createContainer, uploadFile, delContainer } from "../../pages/logic/ContainerManagement";
 
 export default function SwiftContainerList() {
   const [containers, setContainers] = useState([]);
@@ -35,11 +35,11 @@ export default function SwiftContainerList() {
         const data = await getContainers();
         console.log("API trả về containers:", data);
 
-        const list = data.map((name) => ({
-          name,
-          count: 0,
-          bytes: 0,
-          lastModified: new Date().toISOString().split("T")[0],
+        const list = data.map((item) => ({
+          name: item.name,
+          object: item.objects,
+          bytes: item.bytes,
+          lastModified: new Date(item.last_modified).toISOString().split("T")[0],
         }));
 
         setContainers(list);
@@ -144,7 +144,7 @@ export default function SwiftContainerList() {
       if (res.success) {
         const newContainer = {
           name,
-          count: 0,
+          object: 0,
           bytes: 0,
           lastModified: new Date().toISOString().split("T")[0],
         };
@@ -162,6 +162,23 @@ export default function SwiftContainerList() {
       setShowCreateModal(false);
     }
   };
+
+  const handleDeleteContainer = async(containerName)=>{
+    if(!window.confirm(`Bạn có chắc muốn xóa container "${containerName}" không?`))
+      return;
+    try{
+      const response = await delContainer(containerName);
+      if(response?.success){
+        alert(`Xóa container "${containerName}" thành công!`);
+        setContainers(containers.filter(c=>c.name !== containerName));
+      }else{
+        alert(`❌ Xóa thất bại: ${response?.message || "Không xác định"}`);
+      }
+    }catch(error){
+      console.error("Loi khi xoa container",error);
+      alert("Có lỗi xảy ra khi xóa container!");
+    }
+  }
 
   const handleDeleteSelected = () => {
     if (
@@ -224,7 +241,7 @@ export default function SwiftContainerList() {
             <span className="stat-label">Tổng Objects:</span>
             <span className="stat-value">
               {containers
-                .reduce((acc, c) => acc + (c.count || 0), 0)
+                .reduce((acc, c) => acc + (c.object || 0), 0)
                 .toLocaleString()}
             </span>
           </div>
@@ -280,7 +297,7 @@ export default function SwiftContainerList() {
                     {container.name}
                   </div>
                 </td>
-                <td>{(container.count || 0).toLocaleString()}</td>
+                <td>{(container.object || 0).toLocaleString()}</td>
                 <td>{container.lastModified}</td>
                 <td>
                   <div className="action-buttons">
@@ -295,7 +312,10 @@ export default function SwiftContainerList() {
                       <Download size={16} />
                     </button>
                     {isAdmin && (
-                      <button className="icon-btn danger" title="Xóa">
+                      <button 
+                      className="icon-btn danger"
+                      title="Xóa"
+                      onClick={()=>handleDeleteContainer(container.name)}>
                         <Trash2 size={16} />
                       </button>
                     )}

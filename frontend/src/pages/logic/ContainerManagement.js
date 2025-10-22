@@ -50,9 +50,24 @@ export const uploadFile = async (container, file) => {
   }
 };
 
+export const delContainer = async(containerName)=>{
+  try{
+    const response = await api.delete(`/api/containers/delete-container/${containerName}`)
+    if(response.data.success){
+      return {
+        success: true,
+        message: response.data.message
+      };
+    }
+  }catch(error){
+    console.error('Lỗi khi xóa container:', error);
+  }
+
+}
 
 export default {
     getContainers,
     createContainer,
     uploadFile,
+    delContainer
 }
