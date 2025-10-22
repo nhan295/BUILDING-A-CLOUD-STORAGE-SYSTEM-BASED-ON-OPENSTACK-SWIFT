@@ -1,0 +1,403 @@
+/* ProjectManager.css */
+
+* {
+  box-sizing: border-box;
+}
+
+/* Main Wrapper */
+.pm-wrapper {
+  padding: 1.5rem;
+  max-width: 80rem;
+  margin: 0 auto;
+}
+
+/* Page Header */
+.pm-page-header {
+  margin-bottom: 1.5rem;
+}
+
+.pm-page-title {
+  font-size: 1.875rem;
+  font-weight: bold;
+  color: #1f2937;
+  margin: 0 0 0.5rem 0;
+}
+
+.pm-page-subtitle {
+  color: #6b7280;
+  margin: 0;
+}
+
+/* Toolbar */
+.pm-toolbar {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.pm-search-box {
+  flex: 1;
+  position: relative;
+}
+
+.pm-search-icon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.pm-search-input {
+  width: 100%;
+  padding: 0.5rem 1rem 0.5rem 2.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  outline: none;
+  font-size: 1rem;
+}
+
+.pm-search-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Buttons */
+.pm-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pm-btn:disabled {
+  background-color: #d1d5db;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.pm-btn-primary {
+  background-color: #2563eb;
+  color: white;
+}
+
+.pm-btn-primary:hover:not(:disabled) {
+  background-color: #1d4ed8;
+}
+
+.pm-btn-secondary {
+  background-color: #f3f4f6;
+  color: #374151;
+  flex: 1;
+}
+
+.pm-btn-secondary:hover {
+  background-color: #e5e7eb;
+}
+
+.pm-btn-danger {
+  background-color: #fef2f2;
+  color: #dc2626;
+  padding: 0.5rem 0.75rem;
+}
+
+.pm-btn-danger:hover {
+  background-color: #fee2e2;
+}
+
+.pm-btn-outline {
+  background-color: white;
+  border: 1px solid #d1d5db;
+  color: #374151;
+  flex: 1;
+}
+
+.pm-btn-outline:hover {
+  background-color: #f9fafb;
+}
+
+/* Projects Grid */
+.pm-projects-grid {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .pm-projects-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .pm-projects-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Project Card */
+.pm-project-card {
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 1.25rem;
+  transition: box-shadow 0.2s;
+}
+
+.pm-project-card:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.pm-card-top {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.pm-project-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  background-color: #dbeafe;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #2563eb;
+  flex-shrink: 0;
+}
+
+.pm-project-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.pm-project-name {
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 0.25rem 0;
+  font-size: 1rem;
+}
+
+.pm-project-desc {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* Project Stats */
+.pm-project-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.pm-stat-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.pm-stat-item svg {
+  color: #9ca3af;
+  flex-shrink: 0;
+}
+
+.pm-stat-text {
+  color: #6b7280;
+}
+
+/* Storage Section */
+.pm-storage-section {
+  margin-bottom: 0.75rem;
+}
+
+.pm-storage-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.875rem;
+  margin-bottom: 0.25rem;
+}
+
+.pm-storage-label {
+  color: #6b7280;
+}
+
+.pm-storage-values {
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.pm-progress-track {
+  width: 100%;
+  height: 0.5rem;
+  background-color: #e5e7eb;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.pm-progress-fill {
+  height: 100%;
+  transition: width 0.3s;
+}
+
+.pm-usage-text {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
+/* Card Footer */
+.pm-card-footer {
+  display: flex;
+  gap: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #f3f4f6;
+}
+
+/* Modal */
+.pm-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.pm-modal-container {
+  background-color: white;
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 28rem;
+  margin: 1rem;
+}
+
+.pm-modal-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.pm-modal-title {
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: #1f2937;
+  margin: 0;
+}
+
+.pm-close-button {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pm-close-button:hover {
+  color: #6b7280;
+}
+
+.pm-info-box {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background-color: #f9fafb;
+  border-radius: 0.375rem;
+}
+
+.pm-info-line {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0.25rem 0;
+}
+
+.pm-info-value {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.pm-modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Form Inputs */
+.pm-input-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.pm-input-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 0.25rem;
+}
+
+.pm-text-input,
+.pm-textarea-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  outline: none;
+  font-size: 1rem;
+  font-family: inherit;
+}
+
+.pm-text-input:focus,
+.pm-textarea-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.pm-textarea-input {
+  resize: vertical;
+}
+
+.pm-input-hint {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+  display: block;
+}
+
+/* Alert */
+.pm-alert {
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+}
+
+.pm-alert-danger {
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+}
+
+.pm-alert-text {
+  font-size: 0.875rem;
+  color: #dc2626;
+  margin: 0;
+}
+
+.pm-modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
