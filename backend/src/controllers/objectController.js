@@ -1,8 +1,8 @@
 const { SWIFT_URL } = require('../config/swiftConfig');
 const axios = require('axios');
 
-const getObject = async(req,res)=>{
-    try {
+const getObject = async (req, res) => {
+  try {
     const token = req.headers['x-auth-token'];
     const projectId = req.project.id;
     const containerName = req.params.container;
@@ -14,18 +14,21 @@ const getObject = async(req,res)=>{
       });
     }
 
-    // Gọi Swift API để lấy danh sách object
+    // 🟢 Gọi Swift API dạng JSON để có thông tin chi tiết
     const response = await axios.get(
-      `${SWIFT_URL}/AUTH_${projectId}/${containerName}?format=plain`,
+      `${SWIFT_URL}/AUTH_${projectId}/${containerName}?format=json`,
       {
         headers: { 'X-Auth-Token': token },
       }
     );
 
-    // Swift trả về danh sách object dạng text, mỗi dòng là 1 object
-    const objects = response.data
-      ? response.data.split('\n').filter(Boolean)
-      : [];
+    // 🧩 Swift trả về mảng object có dạng:
+    // { name, bytes, content_type, hash, last_modified }
+    const objects = response.data.map(obj => ({
+      name: obj.name,
+      size: obj.bytes, // Dung lượng (bytes)
+      upload_at: obj.last_modified, // Ngày upload
+    }));
 
     return res.status(200).json({
       success: true,
@@ -40,7 +43,7 @@ const getObject = async(req,res)=>{
       message: error.response?.data || error.message,
     });
   }
-}
+};
 
 const newObject = async (req, res) => {
   try {

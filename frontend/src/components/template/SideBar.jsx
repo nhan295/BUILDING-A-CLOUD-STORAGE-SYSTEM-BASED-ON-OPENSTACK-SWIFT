@@ -20,7 +20,7 @@ export default function SideBar() {
     if (path === '/upload') return 'upload';
     if (path === '/dashboard') return 'dashboard';
     if (path === '/user-manager') return 'user-manager';
-    if (path === '/settings') return 'settings';
+    if (path === '/activity-logs') return 'activity-logs';
     
     // Mặc định khi mới login
     if (isSuperAdmin) return 'project-manager';
@@ -36,7 +36,7 @@ export default function SideBar() {
       else if (path === '/upload') setActiveLink('upload');
       else if (path === '/dashboard') setActiveLink('dashboard');
       else if (path === '/user-manager') setActiveLink('user-manager');
-      else if (path === '/settings') setActiveLink('settings');
+      else if (path === '/activity-logs') setActiveLink('activity-logs');
     };
 
     window.addEventListener('popstate', handleLocationChange);
@@ -162,11 +162,11 @@ export default function SideBar() {
                 </a>
                 
                 <a 
-                  href="/settings" 
-                  className={`nav-link ${activeLink === 'settings' ? 'active' : ''}`}
+                  href="/activity-logs" 
+                  className={`nav-link ${activeLink === 'activity-logs' ? 'active' : ''}`}
                   onClick={(e) => {
                     e.preventDefault();
-                    handleLinkClick('settings', '/settings');
+                    handleLinkClick('activity-logs', '/activity-logs');
                   }}
                 >
                   <Clock size={18} />

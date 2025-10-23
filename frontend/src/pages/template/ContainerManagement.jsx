@@ -8,6 +8,7 @@ import {
   Download,
   Upload
 } from "lucide-react";
+import {useNavigate} from "react-router-dom";
 import "../style/ContainerManagement.css";
 import { getStoredRoles } from "../../pages/logic/Login";
 import { getContainers, createContainer, uploadFile, delContainer,downloadContainer } from "../../pages/logic/ContainerManagement";
@@ -27,6 +28,7 @@ export default function SwiftContainerList() {
 
   const roles = getStoredRoles() || [];
   const isAdmin = roles.includes("admin");
+  const navigate = useNavigate();
 
   // Load danh sách container
   useEffect(() => {
@@ -202,6 +204,13 @@ const handleDownloadContainer = async (containerName) => {
   }
 };
 
+const handleClick = (container)=>{
+  navigate(`/container/${container.name}`,{
+    state: {containerName: container.name}
+  });
+  
+}
+
   return (
     <div className="swift-container">
       <div className="header">
@@ -303,7 +312,8 @@ const handleDownloadContainer = async (containerName) => {
                   />
                 </td>
                 <td>
-                  <div className="container-name">
+                  <div className="container-name"
+                    onClick={()=>handleClick(container)} style={{cursor: "pointer"}}>
                     <FolderOpen size={18} className="folder-icon" />
                     {container.name}
                   </div>
