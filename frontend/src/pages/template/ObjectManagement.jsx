@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import {useParams} from 'react-router-dom'
 import { Upload, Trash2, Search, FolderOpen, Download, Eye } from 'lucide-react';
 import '../style/ObjectManagement.css';
-import { getObject } from '../logic/ObjectManagement.js'; // API call lấy danh sách object
+import { getObject,uploadFile,deleteObject,downloadObject } from '../logic/ObjectManagement.js';
+import { getStoredRoles } from "../../pages/logic/Login"; // thêm dòng này
+
 
 export default function ObjectManagement ()  {
   const [objects, setObjects] = useState([]);
@@ -11,11 +13,15 @@ export default function ObjectManagement ()  {
   const [uploadProgress, setUploadProgress] = useState(0);
   const {containerName} = useParams();
 
+  // 🔐 Lấy role từ localStorage hoặc context
+  const roles = getStoredRoles() || [];
+  const isAdmin = roles.includes("admin");
+
   // 🔹 Fetch danh sách object từ API Swift
   useEffect(() => {
     const fetchObjects = async () => {
       try {
-        const data = await getObject(containerName); // Truyền containerName
+        const data = await getObject(containerName);
         const list = data.map((obj, index) => ({
           id: index + 1,
           name: obj.name,
@@ -31,49 +37,85 @@ export default function ObjectManagement ()  {
     fetchObjects();
   }, [containerName]);
 
-  // 📤 Upload file giả lập (có thể thay bằng API upload thật)
-  const handleFileUpload = (e) => {
-    const uploadedFiles = Array.from(e.target.files);
+  // 📤 Upload file
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-    uploadedFiles.forEach((file) => {
-      const newFile = {
-        id: Date.now() + Math.random(),
-        name: file.name,
-        size: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
-        type: file.type,
-        upload_at: new Date().toISOString().split('T')[0],
-      };
+    try {
+      setUploadProgress(0);
 
-      let progress = 0;
-      const interval = setInterval(() => {
-        progress += 10;
-        setUploadProgress(progress);
-        if (progress >= 100) {
-          clearInterval(interval);
-          setObjects((prev) => [...prev, newFile]);
-          setTimeout(() => setUploadProgress(0), 500);
+      const response = await uploadFile(containerName, file, setUploadProgress);
+
+      if (response.success) {
+        alert('✅ Upload file thành công!');
+      } else {
+        if (response.message?.includes('already exists')) {
+          const confirmReplace = window.confirm(
+            `⚠️ File "${file.name}" đã tồn tại trong "${containerName}".\nBạn có muốn ghi đè không?`
+          );
+          if (confirmReplace) {
+            const replaceRes = await uploadFile(containerName, file, setUploadProgress, true);
+            if (replaceRes.success) {
+              alert('✅ Đã ghi đè file thành công!');
+            } else {
+              alert('❌ Ghi đè thất bại: ' + replaceRes.message);
+            }
+          }
+        } else {
+          alert('❌ Upload thất bại: ' + response.message);
         }
-      }, 100);
-    });
-  };
+      }
 
-  // 🗑️ Xóa file khỏi danh sách
-  const handleDelete = (id) => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa file này?')) {
-      setObjects(objects.filter((file) => file.id !== id));
-      if (selectedFile?.id === id) setSelectedFile(null);
+      const updatedData = await getObject(containerName);
+      const updatedList = updatedData.map((obj, index) => ({
+        id: index + 1,
+        name: obj.name,
+        size: (obj.size / (1024 * 1024)).toFixed(2) + ' MB',
+        upload_at: new Date(obj.upload_at).toISOString().split('T')[0],
+        type: obj.name.split('.').pop(),
+      }));
+      setObjects(updatedList);
+    } catch (error) {
+      console.error('Lỗi khi upload file:', error);
+      alert('Upload thất bại.');
     }
   };
 
-  // 👁️ Xem chi tiết file
+  // 🗑️ Xóa file
+  const handleDeleteObject = async(containerName,objectName)=>{
+    if(!window.confirm(`Bạn có chắc muốn xóa file "${objectName}" không?`))
+      return;
+    try{
+      const response = await deleteObject(containerName,objectName);
+      if(response?.success){
+        alert(`Xóa file "${objectName}" thành công!`);
+        setObjects(objects.filter(o=>o.name !== objectName));
+      }else{
+        alert(`❌ Xóa thất bại: ${response?.message || "Không xác định"}`);
+      }
+    }catch(error){
+      console.error("Loi khi xoa file",error);
+      alert("Có lỗi xảy ra khi xóa file!");
+    }
+  }
+
+  const handleDownload = async(containerName,objectName)=>{
+    try {
+      await downloadObject(containerName,objectName);
+      console.log(`Đang tải file: ${objectName}`);
+    } catch (error) {
+      console.error("Lỗi khi tải container:", error);
+      alert("Không thể tải container!");
+    }
+  }
+
   const handleView = (file) => setSelectedFile(file);
 
-  // 🔍 Lọc file theo tên
   const filteredFiles = objects.filter((file) =>
     file.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // 🧩 Icon cho từng loại file
   const getFileIcon = (type) => {
     if (type.startsWith('image/')) return '🖼️';
     if (type.includes('pdf')) return '📄';
@@ -85,7 +127,6 @@ export default function ObjectManagement ()  {
 
   return (
     <div className="fm-container">
-      {/* Toolbar */}
       <div className="fm-toolbar">
         <div className="fm-search-box">
           <Search size={20} />
@@ -104,17 +145,12 @@ export default function ObjectManagement ()  {
         </label>
       </div>
 
-      {/* Upload progress bar */}
       {uploadProgress > 0 && (
         <div className="fm-upload-progress">
-          <div className="fm-progress-bar">
-            <div className="fm-progress-fill" style={{ width: `${uploadProgress}%` }} />
-          </div>
-          <span className="fm-progress-text">{uploadProgress}%</span>
+          
         </div>
       )}
 
-      {/* Main content */}
       <div className="fm-content">
         <div className="fm-file-list">
           {filteredFiles.length === 0 ? (
@@ -148,12 +184,17 @@ export default function ObjectManagement ()  {
                         <button className="fm-action-btn view" onClick={() => handleView(file)}>
                           <Eye size={18} />
                         </button>
-                        <button className="fm-action-btn download">
+                        <button 
+                          className="fm-action-btn download"
+                          onClick={()=>handleDownload(containerName,file.name)}>
                           <Download size={18} />
                         </button>
-                        <button className="fm-action-btn delete" onClick={() => handleDelete(file.id)}>
-                          <Trash2 size={18} />
-                        </button>
+                        {/* ✅ Chỉ hiển thị nút xóa nếu là admin */}
+                        {isAdmin && (
+                          <button className="fm-action-btn delete" onClick={() => handleDeleteObject(containerName,file.name)}>
+                            <Trash2 size={18} />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -163,7 +204,6 @@ export default function ObjectManagement ()  {
           )}
         </div>
 
-        {/* File preview */}
         {selectedFile && (
           <div className="fm-file-preview">
             <div className="fm-preview-header">
@@ -185,4 +225,3 @@ export default function ObjectManagement ()  {
     </div>
   );
 };
-
