@@ -76,43 +76,63 @@ export default function SwiftContainerList() {
 
   const handleUploadFile = async () => {
     if (!selectedFile || !uploadingContainer) {
-      alert("Vui lòng chọn file để tải lên");
-      return;
-    }
+    alert("Vui lòng chọn file để tải lên");
+    return;
+  }
 
-    setIsUploading(true);
-    setUploadProgress(0);
+  setIsUploading(true);
+  setUploadProgress(0);
 
-    try {
-      const result = await uploadFile(uploadingContainer, selectedFile,setUploadProgress);
+  try {
+    // Gọi upload lần đầu (không replace)
+    const result = await uploadFile(uploadingContainer, selectedFile, setUploadProgress);
 
-      if (result.success) {
-        alert(`✅ Upload file "${selectedFile.name}" thành công!`);
-        
-        // Refresh container list
-        const data = await getContainers();
-        const list = data.map((item) => ({
-          name: item.name,
-          object: item.objects,
-          bytes: item.bytes,
-          lastModified: new Date(item.last_modified).toISOString().split("T")[0],
-        }));
-        setContainers(list);
+    if (result.success) {
+      alert(`✅ Upload file "${selectedFile.name}" thành công!`);
+    } else {
+      // Nếu server trả về lỗi file đã tồn tại
+      if (result.message.includes("already exists")) {
+        const confirmReplace = window.confirm(
+          `⚠️ File "${selectedFile.name}" đã tồn tại trong container "${uploadingContainer}".\nBạn có muốn ghi đè không?`
+        );
 
-        // Reset modal
-        setShowUploadModal(false);
-        setSelectedFile(null);
-        setUploadingContainer(null);
+        if (confirmReplace) {
+          // Gọi lại upload với replace=true
+          const retry = await uploadFile(uploadingContainer, selectedFile, setUploadProgress, true);
+          if (retry.success) {
+            alert(`✅ Ghi đè file "${selectedFile.name}" thành công!`);
+          } else {
+            alert(`❌ Upload thất bại: ${retry.message}`);
+          }
+        } else {
+          alert("❎ Đã hủy ghi đè file.");
+        }
       } else {
         alert(`❌ Upload thất bại: ${result.message}`);
       }
-    } catch (error) {
-      console.error("Lỗi upload:", error);
-      alert("Có lỗi xảy ra khi upload file!");
-    } finally {
-      setIsUploading(false);
-      setUploadProgress(0);
     }
+
+    // Refresh container list sau khi upload
+    const data = await getContainers();
+    const list = data.map((item) => ({
+      name: item.name,
+      object: item.objects,
+      bytes: item.bytes,
+      lastModified: new Date(item.last_modified).toISOString().split("T")[0],
+    }));
+    setContainers(list);
+
+    // Reset modal
+    setShowUploadModal(false);
+    setSelectedFile(null);
+    setUploadingContainer(null);
+  } catch (error) {
+    console.error("Lỗi upload:", error);
+    alert("Có lỗi xảy ra khi upload file!");
+  } finally {
+    setIsUploading(false);
+    setUploadProgress(0);
+  }
   };
 
   const handleSelectContainer = (containerName) => {

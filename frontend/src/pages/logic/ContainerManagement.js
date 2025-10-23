@@ -21,21 +21,27 @@ export const createContainer = async(container)=>{
     }
 }
 
-export const uploadFile = async (container, file) => {
+export const uploadFile = async (container, file, setUploadProgress, replace = false) => {
   try {
     const formData = new FormData();
     formData.append("file", file);
 
-    const res = await api.post(`/api/object/${container}/upload`, formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
+    const res = await api.post(
+      `/api/object/${container}/upload?replace=${replace}`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+        onUploadProgress: (event) => {
+          if (setUploadProgress && event.total) {
+            setUploadProgress(Math.round((event.loaded * 100) / event.total));
+          }
+        },
+      }
+    );
 
-    return {
-      success: true,
-      data: res.data,
-    };
+    return { success: true, data: res.data };
   } catch (err) {
     console.error("Upload file error:", err);
 
