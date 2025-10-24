@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Trash2, Search, Shield, UserCheck } from 'lucide-react';
-import { getUsers } from '../logic/UserManagement.js'; // 
+import { getUsers } from '../logic/UserManagement.js';
 import '../style/UserManagement.css';
 
-const UserManagement = () => {
+export default function UserManagement ()  {
   const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -11,7 +11,7 @@ const UserManagement = () => {
     const fetchUsers = async () => {
       try {
         const fetchedUsers = await getUsers();
-        // Map dữ liệu API về dạng dễ dùng
+        // Map API data into a simpler format
         const formattedUsers = fetchedUsers.map((u, index) => ({
           userId: u.id || index + 1,
           username: u.name,
@@ -19,7 +19,7 @@ const UserManagement = () => {
         }));
         setUsers(formattedUsers);
       } catch (error) {
-        console.error('Lỗi khi load user:', error);
+        console.error('Error while loading users:', error);
       }
     };
 
@@ -32,7 +32,7 @@ const UserManagement = () => {
   );
 
   const handleDelete = (userId) => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa user này?')) {
+    if (window.confirm('Are you sure you want to delete this user?')) {
       setUsers(users.filter(user => user.userId !== userId));
     }
   };
@@ -53,8 +53,8 @@ const UserManagement = () => {
             <Users className="icon-large" />
           </div>
           <div>
-            <h1 className="title">Quản lý User</h1>
-            <p className="subtitle">Quản lý người dùng trong hệ thống</p>
+            <h1 className="title">User Management</h1>
+            <p className="subtitle">Manage users in the system</p>
           </div>
         </div>
       </div>
@@ -64,7 +64,7 @@ const UserManagement = () => {
           <Search className="search-icon" />
           <input
             type="text"
-            placeholder="Tìm kiếm theo username hoặc role..."
+            placeholder="Search by username or role..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="search-input"
@@ -87,7 +87,7 @@ const UserManagement = () => {
               <tr>
                 <td colSpan="4" className="empty-state">
                   <Users className="empty-icon" />
-                  <p>Không tìm thấy user nào</p>
+                  <p>No users found</p>
                 </td>
               </tr>
             ) : (
@@ -111,7 +111,7 @@ const UserManagement = () => {
                       className="btn-delete"
                     >
                       <Trash2 className="icon" />
-                      Xóa
+                      Delete
                     </button>
                   </td>
                 </tr>
@@ -124,4 +124,3 @@ const UserManagement = () => {
   );
 };
 
-export default UserManagement;

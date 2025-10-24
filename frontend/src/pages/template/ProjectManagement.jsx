@@ -89,7 +89,7 @@ export default function ProjectManager() {
   };
 
   const handleDeleteProject = (projectId) => {
-    if (confirm('Bạn có chắc muốn xóa project này?')) {
+    if (confirm('Are you sure you want to delete this project?')) {
       setProjects(projects.filter(p => p.id !== projectId));
     }
   };

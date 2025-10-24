@@ -8,10 +8,16 @@ import {
   Download,
   Upload
 } from "lucide-react";
-import {useNavigate} from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import "../style/ContainerManagement.css";
 import { getStoredRoles } from "../../pages/logic/Login";
-import { getContainers, createContainer, uploadFile, delContainer,downloadContainer } from "../../pages/logic/ContainerManagement";
+import {
+  getContainers,
+  createContainer,
+  uploadFile,
+  delContainer,
+  downloadContainer
+} from "../../pages/logic/ContainerManagement";
 
 export default function SwiftContainerList() {
   const [containers, setContainers] = useState([]);
@@ -30,30 +36,32 @@ export default function SwiftContainerList() {
   const isAdmin = roles.includes("admin");
   const navigate = useNavigate();
 
-  // Load danh sách container
+  // 🔹 Load container list
   useEffect(() => {
     const fetchContainer = async () => {
       try {
         const data = await getContainers();
-        console.log("API trả về containers:", data);
+        console.log("Containers from API:", data);
 
         const list = data.map((item) => ({
           name: item.name,
           object: item.objects,
           bytes: item.bytes,
-          lastModified: new Date(item.last_modified).toISOString().split("T")[0],
+          lastModified: new Date(item.last_modified)
+            .toISOString()
+            .split("T")[0],
         }));
 
         setContainers(list);
       } catch (error) {
-        console.error("Lỗi khi load container:", error);
+        console.error("Error loading containers:", error);
       }
     };
 
     fetchContainer();
   }, []);
 
-  // Format dung lượng
+  // 📏 Format bytes into readable units
   const formatBytes = (bytes) => {
     if (bytes === 0) return "0 Bytes";
     const k = 1024;
@@ -62,7 +70,7 @@ export default function SwiftContainerList() {
     return (bytes / Math.pow(k, i)).toFixed(2) + " " + sizes[i];
   };
 
-  // Lọc theo từ khóa tìm kiếm
+  // 🔍 Filter containers by name
   const filteredContainers = containers.filter(
     (container) =>
       container.name &&
@@ -74,65 +82,77 @@ export default function SwiftContainerList() {
     setShowUploadModal(true);
   };
 
+  // 📤 Upload file
   const handleUploadFile = async () => {
     if (!selectedFile || !uploadingContainer) {
-    alert("Vui lòng chọn file để tải lên");
-    return;
-  }
-
-  setIsUploading(true);
-  setUploadProgress(0);
-
-  try {
-    // Gọi upload lần đầu (không replace)
-    const result = await uploadFile(uploadingContainer, selectedFile, setUploadProgress);
-
-    if (result.success) {
-      alert(`✅ Upload file "${selectedFile.name}" thành công!`);
-    } else {
-      // Nếu server trả về lỗi file đã tồn tại
-      if (result.message.includes("already exists")) {
-        const confirmReplace = window.confirm(
-          `⚠️ File "${selectedFile.name}" đã tồn tại trong container "${uploadingContainer}".\nBạn có muốn ghi đè không?`
-        );
-
-        if (confirmReplace) {
-          // Gọi lại upload với replace=true
-          const retry = await uploadFile(uploadingContainer, selectedFile, setUploadProgress, true);
-          if (retry.success) {
-            alert(`✅ Ghi đè file "${selectedFile.name}" thành công!`);
-          } else {
-            alert(`❌ Upload thất bại: ${retry.message}`);
-          }
-        } else {
-          alert("❎ Đã hủy ghi đè file.");
-        }
-      } else {
-        alert(`❌ Upload thất bại: ${result.message}`);
-      }
+      alert("Please select a file to upload.");
+      return;
     }
 
-    // Refresh container list sau khi upload
-    const data = await getContainers();
-    const list = data.map((item) => ({
-      name: item.name,
-      object: item.objects,
-      bytes: item.bytes,
-      lastModified: new Date(item.last_modified).toISOString().split("T")[0],
-    }));
-    setContainers(list);
-
-    // Reset modal
-    setShowUploadModal(false);
-    setSelectedFile(null);
-    setUploadingContainer(null);
-  } catch (error) {
-    console.error("Lỗi upload:", error);
-    alert("Có lỗi xảy ra khi upload file!");
-  } finally {
-    setIsUploading(false);
+    setIsUploading(true);
     setUploadProgress(0);
-  }
+
+    try {
+      // First upload attempt (no overwrite)
+      const result = await uploadFile(
+        uploadingContainer,
+        selectedFile,
+        setUploadProgress
+      );
+
+      if (result.success) {
+        alert(`✅ File "${selectedFile.name}" uploaded successfully!`);
+      } else {
+        // If server reports file already exists
+        if (result.message.includes("already exists")) {
+          const confirmReplace = window.confirm(
+            `⚠️ File "${selectedFile.name}" already exists in container "${uploadingContainer}".\nDo you want to overwrite it?`
+          );
+
+          if (confirmReplace) {
+            // Retry upload with replace=true
+            const retry = await uploadFile(
+              uploadingContainer,
+              selectedFile,
+              setUploadProgress,
+              true
+            );
+            if (retry.success) {
+              alert(`✅ File "${selectedFile.name}" overwritten successfully!`);
+            } else {
+              alert(`❌ Upload failed: ${retry.message}`);
+            }
+          } else {
+            alert("❎ Overwrite canceled.");
+          }
+        } else {
+          alert(`❌ Upload failed: ${result.message}`);
+        }
+      }
+
+      // Refresh container list after upload
+      const data = await getContainers();
+      const list = data.map((item) => ({
+        name: item.name,
+        object: item.objects,
+        bytes: item.bytes,
+        lastModified: new Date(item.last_modified)
+          .toISOString()
+          .split("T")[0],
+      }));
+      setContainers(list);
+
+      // Reset modal
+      setShowUploadModal(false);
+      setSelectedFile(null);
+      setUploadingContainer(null);
+    } catch (error) {
+      console.error("Upload error:", error);
+      alert("An error occurred during file upload!");
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
   };
 
   const handleSelectContainer = (containerName) => {
@@ -156,6 +176,7 @@ export default function SwiftContainerList() {
     setTimeout(() => setIsLoading(false), 1000);
   };
 
+  // 🆕 Create container
   const handleCreateContainer = async () => {
     const name = newContainerName.trim();
     if (!name) return;
@@ -172,39 +193,45 @@ export default function SwiftContainerList() {
         };
 
         setContainers((prev) => [...prev, newContainer]);
-        alert(`Tạo container "${name}" thành công!`);
+        alert(`Container "${name}" created successfully!`);
       } else {
-        alert(`Không thể tạo container: ${res.message || 'Lỗi không xác định'}`);
+        alert(`Failed to create container: ${res.message || "Unknown error"}`);
       }
     } catch (error) {
-      alert('Tạo container thất bại! Vui lòng thử lại.');
-      console.error('Lỗi khi tạo container:', error);
+      alert("Failed to create container. Please try again.");
+      console.error("Error creating container:", error);
     } finally {
       setNewContainerName("");
       setShowCreateModal(false);
     }
   };
 
-  const handleDeleteContainer = async(containerName)=>{
-    if(!window.confirm(`Bạn có chắc muốn xóa container "${containerName}" không?`))
+  // 🗑️ Delete single container
+  const handleDeleteContainer = async (containerName) => {
+    if (
+      !window.confirm(`Are you sure you want to delete container "${containerName}"?`)
+    )
       return;
-    try{
+    try {
       const response = await delContainer(containerName);
-      if(response?.success){
-        alert(`Xóa container "${containerName}" thành công!`);
-        setContainers(containers.filter(c=>c.name !== containerName));
-      }else{
-        alert(`❌ Xóa thất bại: ${response?.message || "Không xác định"}`);
+      if (response?.success) {
+        alert(`Container "${containerName}" deleted successfully!`);
+        setContainers(containers.filter((c) => c.name !== containerName));
+      } else {
+        alert(`❌ Delete failed: ${response?.message || "Unknown error"}`);
       }
-    }catch(error){
-      console.error("Loi khi xoa container",error);
-      alert("Có lỗi xảy ra khi xóa container!");
+    } catch (error) {
+      console.error("Error deleting container:", error);
+      alert("An error occurred while deleting the container!");
     }
-  }
+  };
 
+  // 🗑️ Delete multiple containers
   const handleDeleteSelected = () => {
     if (
-      window.confirm(`Bạn có chắc muốn xóa ${selectedContainers.length} container?`)
+      window.confirm(
+        `Are you sure you want to delete ${selectedContainers.length} container(s)?`
+      )
     ) {
       setContainers(
         containers.filter((c) => !selectedContainers.includes(c.name))
@@ -213,29 +240,29 @@ export default function SwiftContainerList() {
     }
   };
 
-const handleDownloadContainer = async (containerName) => {
-  try {
-    // Gọi hàm logic tải container
-    await downloadContainer(containerName);
-    console.log(`Đang tải container: ${containerName}`);
-  } catch (error) {
-    console.error("Lỗi khi tải container:", error);
-    alert("Không thể tải container!");
-  }
-};
+  // 📥 Download container
+  const handleDownloadContainer = async (containerName) => {
+    try {
+      await downloadContainer(containerName);
+      console.log(`Downloading container: ${containerName}`);
+    } catch (error) {
+      console.error("Error downloading container:", error);
+      alert("Failed to download container!");
+    }
+  };
 
-const handleClick = (container)=>{
-  navigate(`/container/${container.name}`,{
-    state: {containerName: container.name}
-  });
-  
-}
+  // 📂 Navigate to container details
+  const handleClick = (container) => {
+    navigate(`/container/${container.name}`, {
+      state: { containerName: container.name },
+    });
+  };
 
   return (
     <div className="swift-container">
       <div className="header">
         <h1>OpenStack Swift - Container Management</h1>
-        <p className="subtitle">Quản lý Object Storage Containers</p>
+        <p className="subtitle">Manage your Object Storage Containers</p>
       </div>
 
       <div className="toolbar">
@@ -243,7 +270,7 @@ const handleClick = (container)=>{
           <Search className="search-icon" size={20} />
           <input
             type="text"
-            placeholder="Tìm kiếm container..."
+            placeholder="Search containers..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="search-input"
@@ -256,16 +283,16 @@ const handleClick = (container)=>{
             onClick={() => setShowCreateModal(true)}
           >
             <Plus size={18} />
-            Tạo Container
+            Create Container
           </button>
           <button className="btn btn-secondary" onClick={handleRefresh}>
             <RefreshCw size={18} className={isLoading ? "rotating" : ""} />
-            Làm mới
+            Refresh
           </button>
           {selectedContainers.length > 0 && (
             <button className="btn btn-danger" onClick={handleDeleteSelected}>
               <Trash2 size={18} />
-              Xóa ({selectedContainers.length})
+              Delete ({selectedContainers.length})
             </button>
           )}
         </div>
@@ -274,11 +301,11 @@ const handleClick = (container)=>{
       {isAdmin && (
         <div className="stats-bar">
           <div className="stat-item">
-            <span className="stat-label">Tổng Containers:</span>
+            <span className="stat-label">Total Containers:</span>
             <span className="stat-value">{containers.length}</span>
           </div>
           <div className="stat-item">
-            <span className="stat-label">Tổng Objects:</span>
+            <span className="stat-label">Total Objects:</span>
             <span className="stat-value">
               {containers
                 .reduce((acc, c) => acc + (c.object || 0), 0)
@@ -286,7 +313,7 @@ const handleClick = (container)=>{
             </span>
           </div>
           <div className="stat-item">
-            <span className="stat-label">Tổng Dung lượng:</span>
+            <span className="stat-label">Total Storage:</span>
             <span className="stat-value">
               {formatBytes(
                 containers.reduce((acc, c) => acc + (c.bytes || 0), 0)
@@ -310,10 +337,10 @@ const handleClick = (container)=>{
                   }
                 />
               </th>
-              <th>Tên Container</th>
-              <th>Số Objects</th>
-              <th>Ngày cập nhật</th>
-              <th>Thao tác</th>
+              <th>Container Name</th>
+              <th>Object Count</th>
+              <th>Last Modified</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -332,8 +359,11 @@ const handleClick = (container)=>{
                   />
                 </td>
                 <td>
-                  <div className="container-name"
-                    onClick={()=>handleClick(container)} style={{cursor: "pointer"}}>
+                  <div
+                    className="container-name"
+                    onClick={() => handleClick(container)}
+                    style={{ cursor: "pointer" }}
+                  >
                     <FolderOpen size={18} className="folder-icon" />
                     {container.name}
                   </div>
@@ -342,24 +372,30 @@ const handleClick = (container)=>{
                 <td>{container.lastModified}</td>
                 <td>
                   <div className="action-buttons">
-                    <button 
-                      className="icon-btn" 
-                      title="Tải lên"
+                    <button
+                      className="icon-btn"
+                      title="Upload"
                       onClick={() => handleOpenUploadModal(container.name)}
                     >
                       <Upload size={16} />
                     </button>
-                    <button 
-                    className="icon-btn" 
-                    title="Tải xuống"
-                    onClick={()=>handleDownloadContainer(container.name)}>
+                    <button
+                      className="icon-btn"
+                      title="Download"
+                      onClick={() =>
+                        handleDownloadContainer(container.name)
+                      }
+                    >
                       <Download size={16} />
                     </button>
                     {isAdmin && (
-                      <button 
-                      className="icon-btn danger"
-                      title="Xóa"
-                      onClick={()=>handleDeleteContainer(container.name)}>
+                      <button
+                        className="icon-btn danger"
+                        title="Delete"
+                        onClick={() =>
+                          handleDeleteContainer(container.name)
+                        }
+                      >
                         <Trash2 size={16} />
                       </button>
                     )}
@@ -373,18 +409,19 @@ const handleClick = (container)=>{
         {filteredContainers.length === 0 && (
           <div className="empty-state">
             <FolderOpen size={48} />
-            <p>Không tìm thấy container nào</p>
+            <p>No containers found</p>
           </div>
         )}
       </div>
 
+      {/* Create container modal */}
       {showCreateModal && (
         <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h2>Tạo Container Mới</h2>
+            <h2>Create New Container</h2>
             <input
               type="text"
-              placeholder="Nhập tên container..."
+              placeholder="Enter container name..."
               value={newContainerName}
               onChange={(e) => setNewContainerName(e.target.value)}
               className="modal-input"
@@ -395,23 +432,21 @@ const handleClick = (container)=>{
                 className="btn btn-secondary"
                 onClick={() => setShowCreateModal(false)}
               >
-                Hủy
+                Cancel
               </button>
-              <button
-                className="btn btn-primary"
-                onClick={handleCreateContainer}
-              >
-                Tạo
+              <button className="btn btn-primary" onClick={handleCreateContainer}>
+                Create
               </button>
             </div>
           </div>
         </div>
       )}
 
+      {/* Upload modal */}
       {showUploadModal && (
         <div className="modal-overlay" onClick={() => setShowUploadModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h2>Tải lên file vào container "{uploadingContainer}"</h2>
+            <h2>Upload file to container "{uploadingContainer}"</h2>
 
             <input
               type="file"
@@ -424,14 +459,16 @@ const handleClick = (container)=>{
                 className="btn btn-secondary"
                 onClick={() => setShowUploadModal(false)}
               >
-                Hủy
+                Cancel
               </button>
               <button
                 className="btn btn-primary"
                 onClick={handleUploadFile}
                 disabled={!selectedFile || isUploading}
               >
-                {isUploading ? `Đang tải lên... (${uploadProgress}%)` : "Tải lên"}
+                {isUploading
+                  ? `Uploading... (${uploadProgress}%)`
+                  : "Upload"}
               </button>
             </div>
           </div>

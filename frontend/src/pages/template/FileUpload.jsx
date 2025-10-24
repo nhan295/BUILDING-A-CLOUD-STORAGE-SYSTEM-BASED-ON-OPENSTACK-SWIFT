@@ -54,17 +54,17 @@ export default function FileUpload ()  {
     <div className="upload-container">
       <div className="upload-header">
         <h1 className="title">Upload Files</h1>
-        <p className="subtitle">Tải lên files vào OpenStack Swift Storage</p>
+        <p className="subtitle">Upload files to OpenStack Swift Storage</p>
       </div>
 
       <div className="container-select-card">
-        <label className="label">Chọn Container</label>
+        <label className="label">Select Container</label>
         <select 
           className="select-input"
           value={container}
           onChange={(e) => setContainer(e.target.value)}
         >
-          <option value="">-- Chọn container --</option>
+          <option value="">-- Select container --</option>
           {containers.map(c => (
             <option key={c.name} value={c.name}>{c.label}</option>
           ))}
@@ -87,15 +87,15 @@ export default function FileUpload ()  {
           className="file-input"
         />
         <Upload className="upload-icon" />
-        <h3 className="dropzone-title">Kéo thả files vào đây</h3>
-        <p className="dropzone-text">hoặc click để chọn files</p>
-        <p className="dropzone-hint">Hỗ trợ tất cả các loại file</p>
+        <h3 className="dropzone-title">Drag and drop files here</h3>
+        <p className="dropzone-text">or click to select files</p>
+        <p className="dropzone-hint">All file types are supported</p>
       </div>
 
       {files.length > 0 && (
         <div className="files-list">
           <div className="files-header">
-            <h3>Files đã chọn ({files.length})</h3>
+            <h3>Selected Files ({files.length})</h3>
             {files.some(f => f.status === 'pending') && (
               <button 
                 className="btn-upload" 
@@ -143,4 +143,3 @@ export default function FileUpload ()  {
     </div>
   );
 };
-

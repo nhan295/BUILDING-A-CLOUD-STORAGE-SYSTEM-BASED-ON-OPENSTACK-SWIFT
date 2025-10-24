@@ -1,23 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import {useParams} from 'react-router-dom'
+import { useParams } from 'react-router-dom';
 import { Upload, Trash2, Search, FolderOpen, Download, Eye } from 'lucide-react';
 import '../style/ObjectManagement.css';
-import { getObject,uploadFile,deleteObject,downloadObject } from '../logic/ObjectManagement.js';
-import { getStoredRoles } from "../../pages/logic/Login"; // thêm dòng này
+import { getObject, uploadFile, deleteObject, downloadObject } from '../logic/ObjectManagement.js';
+import { getStoredRoles } from "../../pages/logic/Login"; // added this line
 
-
-export default function ObjectManagement ()  {
+export default function ObjectManagement() {
   const [objects, setObjects] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const {containerName} = useParams();
+  const { containerName } = useParams();
 
-  // 🔐 Lấy role từ localStorage hoặc context
+  // 🔐 Get role from localStorage or context
   const roles = getStoredRoles() || [];
   const isAdmin = roles.includes("admin");
 
-  // 🔹 Fetch danh sách object từ API Swift
+  // 🔹 Fetch object list from Swift API
   useEffect(() => {
     const fetchObjects = async () => {
       try {
@@ -44,26 +43,25 @@ export default function ObjectManagement ()  {
 
     try {
       setUploadProgress(0);
-
       const response = await uploadFile(containerName, file, setUploadProgress);
 
       if (response.success) {
-        alert('✅ Upload file thành công!');
+        alert('✅ File uploaded successfully!');
       } else {
         if (response.message?.includes('already exists')) {
           const confirmReplace = window.confirm(
-            `⚠️ File "${file.name}" đã tồn tại trong "${containerName}".\nBạn có muốn ghi đè không?`
+            `⚠️ File "${file.name}" already exists in "${containerName}".\nDo you want to overwrite it?`
           );
           if (confirmReplace) {
             const replaceRes = await uploadFile(containerName, file, setUploadProgress, true);
             if (replaceRes.success) {
-              alert('✅ Đã ghi đè file thành công!');
+              alert('✅ File overwritten successfully!');
             } else {
-              alert('❌ Ghi đè thất bại: ' + replaceRes.message);
+              alert('❌ Overwrite failed: ' + replaceRes.message);
             }
           }
         } else {
-          alert('❌ Upload thất bại: ' + response.message);
+          alert('❌ Upload failed: ' + response.message);
         }
       }
 
@@ -77,38 +75,37 @@ export default function ObjectManagement ()  {
       }));
       setObjects(updatedList);
     } catch (error) {
-      console.error('Lỗi khi upload file:', error);
-      alert('Upload thất bại.');
+      console.error('Error while uploading file:', error);
+      alert('Upload failed.');
     }
   };
 
-  // 🗑️ Xóa file
-  const handleDeleteObject = async(containerName,objectName)=>{
-    if(!window.confirm(`Bạn có chắc muốn xóa file "${objectName}" không?`))
-      return;
-    try{
-      const response = await deleteObject(containerName,objectName);
-      if(response?.success){
-        alert(`Xóa file "${objectName}" thành công!`);
-        setObjects(objects.filter(o=>o.name !== objectName));
-      }else{
-        alert(`❌ Xóa thất bại: ${response?.message || "Không xác định"}`);
-      }
-    }catch(error){
-      console.error("Loi khi xoa file",error);
-      alert("Có lỗi xảy ra khi xóa file!");
-    }
-  }
-
-  const handleDownload = async(containerName,objectName)=>{
+  // 🗑️ Delete file
+  const handleDeleteObject = async (containerName, objectName) => {
+    if (!window.confirm(`Are you sure you want to delete the file "${objectName}"?`)) return;
     try {
-      await downloadObject(containerName,objectName);
-      console.log(`Đang tải file: ${objectName}`);
+      const response = await deleteObject(containerName, objectName);
+      if (response?.success) {
+        alert(`File "${objectName}" deleted successfully!`);
+        setObjects(objects.filter(o => o.name !== objectName));
+      } else {
+        alert(`❌ Delete failed: ${response?.message || "Unknown error"}`);
+      }
     } catch (error) {
-      console.error("Lỗi khi tải container:", error);
-      alert("Không thể tải container!");
+      console.error("Error deleting file:", error);
+      alert("An error occurred while deleting the file!");
     }
-  }
+  };
+
+  const handleDownload = async (containerName, objectName) => {
+    try {
+      await downloadObject(containerName, objectName);
+      console.log(`Downloading file: ${objectName}`);
+    } catch (error) {
+      console.error("Error while downloading container:", error);
+      alert("Failed to download container!");
+    }
+  };
 
   const handleView = (file) => setSelectedFile(file);
 
@@ -132,7 +129,7 @@ export default function ObjectManagement ()  {
           <Search size={20} />
           <input
             type="text"
-            placeholder="Tìm kiếm file..."
+            placeholder="Search files..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -147,7 +144,7 @@ export default function ObjectManagement ()  {
 
       {uploadProgress > 0 && (
         <div className="fm-upload-progress">
-          
+          {/* you can add progress bar display here */}
         </div>
       )}
 
@@ -156,16 +153,16 @@ export default function ObjectManagement ()  {
           {filteredFiles.length === 0 ? (
             <div className="fm-empty-state">
               <FolderOpen size={64} />
-              <p>Không tìm thấy file nào</p>
+              <p>No files found</p>
             </div>
           ) : (
             <table>
               <thead>
                 <tr>
-                  <th>Tên File</th>
-                  <th>Kích Thước</th>
-                  <th>Ngày Upload</th>
-                  <th>Thao Tác</th>
+                  <th>File Name</th>
+                  <th>Size</th>
+                  <th>Upload Date</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -184,14 +181,14 @@ export default function ObjectManagement ()  {
                         <button className="fm-action-btn view" onClick={() => handleView(file)}>
                           <Eye size={18} />
                         </button>
-                        <button 
+                        <button
                           className="fm-action-btn download"
-                          onClick={()=>handleDownload(containerName,file.name)}>
+                          onClick={() => handleDownload(containerName, file.name)}>
                           <Download size={18} />
                         </button>
-                        {/* ✅ Chỉ hiển thị nút xóa nếu là admin */}
+                        {/* ✅ Only show delete button if user is admin */}
                         {isAdmin && (
-                          <button className="fm-action-btn delete" onClick={() => handleDeleteObject(containerName,file.name)}>
+                          <button className="fm-action-btn delete" onClick={() => handleDeleteObject(containerName, file.name)}>
                             <Trash2 size={18} />
                           </button>
                         )}
@@ -207,16 +204,16 @@ export default function ObjectManagement ()  {
         {selectedFile && (
           <div className="fm-file-preview">
             <div className="fm-preview-header">
-              <h3>Chi Tiết File</h3>
+              <h3>File Details</h3>
               <button className="fm-close-btn" onClick={() => setSelectedFile(null)}>×</button>
             </div>
             <div className="fm-preview-content">
               <div className="fm-preview-icon">{getFileIcon(selectedFile.type)}</div>
               <div className="fm-preview-details">
-                <div className="fm-detail-row"><span className="label">Tên file:</span><span>{selectedFile.name}</span></div>
-                <div className="fm-detail-row"><span className="label">Kích thước:</span><span>{selectedFile.size}</span></div>
-                <div className="fm-detail-row"><span className="label">Loại:</span><span>{selectedFile.type}</span></div>
-                <div className="fm-detail-row"><span className="label">Ngày upload:</span><span>{selectedFile.upload_at}</span></div>
+                <div className="fm-detail-row"><span className="label">File Name:</span><span>{selectedFile.name}</span></div>
+                <div className="fm-detail-row"><span className="label">Size:</span><span>{selectedFile.size}</span></div>
+                <div className="fm-detail-row"><span className="label">Type:</span><span>{selectedFile.type}</span></div>
+                <div className="fm-detail-row"><span className="label">Upload Date:</span><span>{selectedFile.upload_at}</span></div>
               </div>
             </div>
           </div>

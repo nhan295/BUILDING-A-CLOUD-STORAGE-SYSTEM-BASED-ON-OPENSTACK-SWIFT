@@ -139,7 +139,7 @@ export default function SwiftDashboard() {
           ]);
         }
       } catch (error) {
-        console.error("Lỗi khi fetch dashboard data:", error);
+        console.error("Error while fetch dashboard data:", error);
       }
     };
 
