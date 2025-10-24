@@ -4,6 +4,6 @@ export const getUsers = async()=>{
         const response = await api.get('/api/users/project-users');
         return response.data.users || []; 
     }catch(error){
-        console.error('Lỗi khi lấy danh sách container:', error);
+        console.error('Error while get users list', error);
     }
 }

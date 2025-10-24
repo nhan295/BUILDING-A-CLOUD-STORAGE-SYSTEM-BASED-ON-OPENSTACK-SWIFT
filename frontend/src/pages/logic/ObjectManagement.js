@@ -74,7 +74,7 @@ export const downloadObject = async(containerName,objectName)=>{
 
   } catch (err) {
     console.error('Download error:', err);
-    alert('Không thể tải file.');
+    alert('Cannot download object!');
   }
 }
 export default{

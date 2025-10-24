@@ -15,7 +15,7 @@ const validateToken = async (req, res, next) => {
 
     const tokenData = response.data.token;
 
-    // Kiểm tra project có tồn tại
+    
     if (!tokenData.project || !tokenData.project.id) {
       return res.status(403).json({
         success: false,
@@ -23,7 +23,7 @@ const validateToken = async (req, res, next) => {
       });
     }
 
-    // Gán req
+    // assign req
     req.token = token;
     req.user = {
       username: tokenData.user.name,

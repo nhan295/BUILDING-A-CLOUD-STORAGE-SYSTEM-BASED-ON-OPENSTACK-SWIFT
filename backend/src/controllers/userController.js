@@ -53,7 +53,7 @@ const getProjectUsers = async (req, res) => {
             roles: [roleName]
           });
         } else {
-          // User đã tồn tại → thêm role vào array
+          // User existed → add role into array
           const existing = userMap.get(userId);
           if (!existing.roles.includes(roleName)) {
             existing.roles.push(roleName);

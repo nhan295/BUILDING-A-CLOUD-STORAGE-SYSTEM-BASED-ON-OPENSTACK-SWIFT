@@ -77,13 +77,6 @@ export const uploadSingleFile = async (fileData, container, setFiles) => {
       updateFileStatus(fileData.id, 'uploading', i, setFiles);
     }
 
-    // TODO: Replace with actual API call
-    // const formData = new FormData();
-    // formData.append('file', fileData.file);
-    // await uploadFileAPI(container, formData, (progress) => {
-    //   updateFileStatus(fileData.id, 'uploading', progress, setFiles);
-    // });
-
     updateFileStatus(fileData.id, 'success', 100, setFiles);
     return { success: true };
   } catch (error) {
@@ -106,19 +99,6 @@ export const uploadAllFiles = async (files, container, setFiles) => {
   }
 };
 
-// API functions (cần implement thực tế)
-// export const uploadFileAPI = async (container, formData, onProgress) => {
-//   // TODO: Implement actual API call
-//   // Example:
-//   // return await api.post(`/api/containers/${container}/objects`, formData, {
-//   //   onUploadProgress: (progressEvent) => {
-//   //     const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-//   //     onProgress(progress);
-//   //   }
-//   // });
-  
-//   throw new Error('API not implemented');
-// };
 
 export const getContainersAPI = async () => {
   // TODO: Implement actual API call

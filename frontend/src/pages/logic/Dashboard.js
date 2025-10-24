@@ -5,8 +5,8 @@ export const totalContainer = async() => {
         const response = await api.get('/api/containers/');
         return response.data.containers || 0; 
     } catch (error) {
-        console.error('Lỗi khi lấy danh sách container:', error);
-        return 0; // Trả về 0 thay vì object
+        console.error('Error while fetching container list:', error);
+        return 0; // Return 0 instead of object
     }
 }
 
@@ -15,35 +15,36 @@ export const totalObject = async(container) => {
         const response = await api.get(`/api/object/${container}`);
         return response.data.total_objects || 0; 
     } catch (error) {
-        console.error(`Lỗi khi lấy object trong container ${container}:`, error);
-        return 0; // Trả về 0 thay vì object
+        console.error(`Error while fetching objects in container ${container}:`, error);
+        return 0; // Return 0 instead of object
     }
 }
 
-export const totalProjectUser = async()=>{
-    try{
+export const totalProjectUser = async()=> {
+    try {
         const response = await api.get('/api/users/project-users');
         return response.data.total_users || 0;
-    }catch(error){
-        console.error('Lỗi khi lấy danh sách user trong project:', error);
+    } catch (error) {
+        console.error('Error while fetching project users:', error);
         return 0;
     }
 }
 
-export const projectSize = async()=>{
-    try{
+export const projectSize = async()=> {
+    try {
         const response = await api.get('api/account/account-size');
-        const {bytes_used,quota_bytes} =  response.data;
+        const { bytes_used, quota_bytes } = response.data;
         return {
             bytes_used: bytes_used || 0,
             quota_bytes: quota_bytes || 0
         }
-    }catch(error){
-        console.error('Lỗi khi lấy dung lượng project:', error);
+    } catch (error) {
+        console.error('Error while fetching project storage size:', error);
         return 0;
     }
 }
-export default{
+
+export default {
     totalContainer,
     totalObject,
     totalProjectUser,

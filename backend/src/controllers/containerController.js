@@ -8,14 +8,13 @@ const getContainers = async (req, res) => {
     const projectId = req.project.id;
     const token = req.token;
 
-    // 1️⃣ Lấy danh sách containers
     const response = await axios.get(`${SWIFT_URL}/AUTH_${projectId}?format=json`, {
       headers: { 'X-Auth-Token': token },
     });
 
-    const containers = response.data; // Swift trả dạng [{name, count, bytes}, ...]
+    const containers = response.data; // Swift return type [{name, count, bytes}, ...]
 
-    // 2️⃣ Lấy thêm thông tin chi tiết cho từng container
+    //  get more details for each container
     const detailedContainers = await Promise.all(
       containers.map(async (container) => {
         try {
@@ -41,7 +40,7 @@ const getContainers = async (req, res) => {
       })
     );
 
-    // 3️⃣ Trả kết quả về client
+  
     return res.status(200).json({
       success: true,
       total_containers: detailedContainers.length,
@@ -59,11 +58,11 @@ const getContainers = async (req, res) => {
 
 const delContainer = async (req, res) => {
   try {
-    const token = req.token; // lấy từ middleware validateToken
+    const token = req.token; 
     const projectId = req.project.id;
     const containerName = req.params.containerName;
 
-    // 🧩 B1: Lấy danh sách object trong container
+    // get list of objects in the container
     const listRes = await axios.get(
       `${SWIFT_URL}/AUTH_${projectId}/${containerName}?format=json`,
       { headers: { "X-Auth-Token": token } }
@@ -71,7 +70,7 @@ const delContainer = async (req, res) => {
 
     const objects = listRes.data || [];
 
-    // 🧹 B2: Nếu có object thì xóa từng object
+    // delete all objects in the container
     if (objects.length > 0) {
       for (const obj of objects) {
         await axios.delete(
@@ -81,7 +80,7 @@ const delContainer = async (req, res) => {
       }
     }
 
-    // 🧱 B3: Sau khi container trống → xóa container
+    // after all objects are deleted, delete the container
     await axios.delete(`${SWIFT_URL}/AUTH_${projectId}/${containerName}`, {
       headers: { "X-Auth-Token": token },
     });
@@ -122,7 +121,7 @@ const createContainer = async (req, res) => {
    try {
     const token = req.headers['x-auth-token'];
     const projectId = req.project.id;
-    const { container } = req.body; // tên container gửi từ body
+    const { container } = req.body; 
 
     if (!container) {
       return res.status(400).json({
@@ -131,10 +130,10 @@ const createContainer = async (req, res) => {
       });
     }
 
-    // Gọi Swift API tạo container
+    
     const response = await axios.put(
       `${SWIFT_URL}/AUTH_${projectId}/${container}`,
-      null, // body không cần
+      null, 
       {
         headers: { 'X-Auth-Token': token },
       }

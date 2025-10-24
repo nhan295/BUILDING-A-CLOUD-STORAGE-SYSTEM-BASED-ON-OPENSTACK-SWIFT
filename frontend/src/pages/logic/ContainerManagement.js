@@ -6,7 +6,7 @@ export const getContainers = async()=>{
         return response.data.containers || [];
 
     }catch(error){
-        console.error('Lỗi khi lấy danh sách container:', error);
+        console.error('Error while get container list', error);
 
     }
 
@@ -16,7 +16,7 @@ export const createContainer = async(container)=>{
         const response = await api.post('/api/containers/create-container', {container})
         return response.data;  
     }catch(error){
-        console.error('Lỗi khi tạo container:', error);
+        console.error('Error while create container', error);
         throw error; 
     }
 }
@@ -66,7 +66,7 @@ export const delContainer = async(containerName)=>{
       };
     }
   }catch(error){
-    console.error('Lỗi khi xóa container:', error);
+    console.error('Error while delete container', error);
   }
 
 }
@@ -92,8 +92,8 @@ export const downloadContainer = async(containerName) => {
     }, 1000);
 
   } catch (error) {
-    console.error("Lỗi tải container:", error);
-    alert("❌ Không thể tải container!");
+    console.error("Error while download:", error);
+    alert("Cannot download container!");
   }
 };
 

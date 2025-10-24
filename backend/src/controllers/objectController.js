@@ -14,7 +14,6 @@ const getObject = async (req, res) => {
       });
     }
 
-    // 🟢 Gọi Swift API dạng JSON để có thông tin chi tiết
     const response = await axios.get(
       `${SWIFT_URL}/AUTH_${projectId}/${containerName}?format=json`,
       {
@@ -22,12 +21,12 @@ const getObject = async (req, res) => {
       }
     );
 
-    // 🧩 Swift trả về mảng object có dạng:
+    // 🧩 Swift receive data type
     // { name, bytes, content_type, hash, last_modified }
     const objects = response.data.map(obj => ({
       name: obj.name,
-      size: obj.bytes, // Dung lượng (bytes)
-      upload_at: obj.last_modified, // Ngày upload
+      size: obj.bytes, 
+      upload_at: obj.last_modified, 
     }));
 
     return res.status(200).json({
@@ -51,7 +50,7 @@ const newObject = async (req, res) => {
     const projectId = req.project.id;
     const containerName = req.params.container;
     const file = req.file;
-    const replace = req.query.replace === "true"; // 👈 cho phép ghi đè nếu true
+    const replace = req.query.replace === "true"; // override if exists
 
     if (!file) {
       return res.status(400).json({
@@ -63,13 +62,12 @@ const newObject = async (req, res) => {
     const objectName = file.originalname;
     const objectUrl = `${SWIFT_URL}/AUTH_${projectId}/${containerName}/${objectName}`;
 
-    // 🔍 Kiểm tra xem object đã tồn tại chưa
+    // check if object exists
     try {
       await axios.head(objectUrl, {
         headers: { "X-Auth-Token": token },
       });
 
-      // Nếu không bị lỗi thì object tồn tại
       if (!replace) {
         return res.status(409).json({
           success: false,
@@ -77,13 +75,13 @@ const newObject = async (req, res) => {
         });
       }
     } catch (headErr) {
-      // 404 => file chưa tồn tại, có thể upload
+      // 404 => if not found, can upload
       if (headErr.response && headErr.response.status !== 404) {
-        throw headErr; // các lỗi khác thì quăng ra
+        throw headErr; 
       }
     }
 
-    // 📤 Upload (ghi đè hoặc tạo mới)
+    // 📤 Upload (overide or create a new one)
     const response = await axios.put(objectUrl, file.buffer, {
       headers: {
         "X-Auth-Token": token,
@@ -122,11 +120,10 @@ const delObject = async (req, res) => {
       });
     }
 
-    // Encode để tránh lỗi 404 giả
+    // Encode to avoid fake 404
     const url = `${SWIFT_URL}/AUTH_${encodeURIComponent(projectId)}/${encodeURIComponent(containerName)}/${encodeURIComponent(objectName)}`;
     console.log('Deleting object at URL:', url);
 
-    // Gọi Swift API xóa object
     await axios.delete(url, {
       headers: { 'X-Auth-Token': token },
     });
@@ -158,18 +155,18 @@ const delObject = async (req, res) => {
 
 const downloadObject = async(req,res)=>{
   try {
-    const { container, object } = req.params; // /api/object/:container/:object/download
-    const token = req.token; // middleware validateToken đã gắn token vào req
-    const projectId = req.project.id; // middleware validateToken cũng có req.project
+    const { container, object } = req.params; 
+    const token = req.token; 
+    const projectId = req.project.id; 
 
     const url = `${SWIFT_URL}/AUTH_${projectId}/${container}/${object}`;
 
     const response = await axios.get(url, {
       headers: { 'X-Auth-Token': token },
-      responseType: 'arraybuffer', // quan trọng để nhận dữ liệu binary
+      responseType: 'arraybuffer', // receive binary data
     });
 
-    // Lấy tên file và loại file để set header hợp lý
+    // Retrieve the file name and file type to set the appropriate headers
     const fileName = object.split('/').pop();
     const contentType = response.headers['content-type'] || 'application/octet-stream';
 

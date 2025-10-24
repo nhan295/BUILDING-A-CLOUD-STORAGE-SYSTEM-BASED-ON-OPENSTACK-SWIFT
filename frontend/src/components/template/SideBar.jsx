@@ -63,7 +63,7 @@ export default function SideBar() {
       </div>
 
       <nav className="sidebar-nav">
-        {/* Giao diện cho Super Admin (admin role + admin project) */}
+        {/* {sys admin UI} */}
         {isSuperAdmin ? (
           <>
             <div className="section-title">System Administration</div>
@@ -105,7 +105,7 @@ export default function SideBar() {
             </a>
           </>
         ) : (
-          /* Giao diện cho Admin thường và Member */
+          // {regular admin/member UI}
           <>
             <div className="section-title">Storage</div>
             
@@ -146,7 +146,7 @@ export default function SideBar() {
                   }}
                 >
                   <BarChart3 size={18} />
-                  <span>Thống kê</span>
+                  <span>Statitic</span>
                 </a>
                 
                 <a 
@@ -158,7 +158,7 @@ export default function SideBar() {
                   }}
                 >
                   <Users size={18} />
-                  <span>Quản lý Users</span>
+                  <span>Users Management</span>
                 </a>
                 
                 <a 
