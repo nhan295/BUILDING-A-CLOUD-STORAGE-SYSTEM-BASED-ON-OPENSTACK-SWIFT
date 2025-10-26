@@ -2,7 +2,7 @@ const { SWIFT_URL } = require('../config/swiftConfig');
 const axios = require('axios')
 
 // Lấy dung lượng của project (theo account tương ứng)
-const getProjectUsage = async (req, res) => {
+const getAccountSize = async (req, res) => {
   try {
     const token = req.headers['x-auth-token'];
     const projectId = req.project.id; // từ middleware validateToken
@@ -51,6 +51,53 @@ const getProjectUsage = async (req, res) => {
   }
 };
 
+const getAccountLogs = async(req,res)=>{
+  try {
+    const { project_id } = req.params; // project id truyền trên URL
+    if (!project_id) {
+      return res.status(400).json({ success: false, message: 'Missing project_id' });
+    }
+
+    // Đọc file log
+    const data = fs.readFileSync(LOG_PATH, 'utf8');
+
+    // Tách từng dòng và lọc theo project
+    const logs = data
+      .split('\n')
+      .filter(line => line.includes(`AUTH_${project_id}`))
+      .slice(-100); // chỉ lấy 100 dòng cuối cùng cho nhẹ
+
+    // Format gọn gàng hơn (action + file + user)
+    const formatted = logs.map(line => {
+      const match = line.match(/"(PUT|DELETE|GET)\s+([^"]+)\s+HTTP\/1\.\d".+"(\w+)"$/);
+      if (match) {
+        return {
+          action: match[1],
+          path: match[2],
+          user: match[3],
+          raw: line
+        };
+      } else {
+        return { raw: line };
+      }
+    });
+
+    return res.status(200).json({
+      success: true,
+      project_id,
+      total: formatted.length,
+      logs: formatted
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to read Swift logs',
+      error: error.message
+    });
+  }
+}
+
 module.exports = {
-  getProjectUsage,
+  getAccountSize,
+  getAccountLogs
 };
