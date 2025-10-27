@@ -176,7 +176,7 @@ export default function SwiftContainerList() {
     setTimeout(() => setIsLoading(false), 1000);
   };
 
-  // 🆕 Create container
+  //  Create container
   const handleCreateContainer = async () => {
     const name = newContainerName.trim();
     if (!name) return;
@@ -206,7 +206,7 @@ export default function SwiftContainerList() {
     }
   };
 
-  // 🗑️ Delete single container
+  //  Delete single container
   const handleDeleteContainer = async (containerName) => {
     if (
       !window.confirm(`Are you sure you want to delete container "${containerName}"?`)

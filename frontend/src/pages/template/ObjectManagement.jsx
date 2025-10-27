@@ -12,11 +12,11 @@ export default function ObjectManagement() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const { containerName } = useParams();
 
-  // 🔐 Get role from localStorage or context
+  //  Get role from localStorage or context
   const roles = getStoredRoles() || [];
   const isAdmin = roles.includes("admin");
 
-  // 🔹 Fetch object list from Swift API
+  //  Fetch object list from Swift API
   useEffect(() => {
     const fetchObjects = async () => {
       try {
@@ -27,6 +27,7 @@ export default function ObjectManagement() {
           size: (obj.size / (1024 * 1024)).toFixed(2) + ' MB',
           upload_at: new Date(obj.upload_at).toISOString().split('T')[0],
           type: obj.name.split('.').pop(),
+          owner: obj.upload_by || 'unknown'
         }));
         setObjects(list);
       } catch (error) {
@@ -36,7 +37,7 @@ export default function ObjectManagement() {
     fetchObjects();
   }, [containerName]);
 
-  // 📤 Upload file
+  //  Upload file
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -61,7 +62,7 @@ export default function ObjectManagement() {
             }
           }
         } else {
-          alert('❌ Upload failed: ' + response.message);
+          alert('Upload failed: ' + response.message);
         }
       }
 
@@ -80,7 +81,7 @@ export default function ObjectManagement() {
     }
   };
 
-  // 🗑️ Delete file
+  //  Delete file
   const handleDeleteObject = async (containerName, objectName) => {
     if (!window.confirm(`Are you sure you want to delete the file "${objectName}"?`)) return;
     try {
@@ -89,7 +90,7 @@ export default function ObjectManagement() {
         alert(`File "${objectName}" deleted successfully!`);
         setObjects(objects.filter(o => o.name !== objectName));
       } else {
-        alert(`❌ Delete failed: ${response?.message || "Unknown error"}`);
+        alert(` Delete failed: ${response?.message || "Unknown error"}`);
       }
     } catch (error) {
       console.error("Error deleting file:", error);
@@ -186,7 +187,7 @@ export default function ObjectManagement() {
                           onClick={() => handleDownload(containerName, file.name)}>
                           <Download size={18} />
                         </button>
-                        {/* ✅ Only show delete button if user is admin */}
+                        {/*  Only show delete button if user is admin */}
                         {isAdmin && (
                           <button className="fm-action-btn delete" onClick={() => handleDeleteObject(containerName, file.name)}>
                             <Trash2 size={18} />
@@ -214,6 +215,7 @@ export default function ObjectManagement() {
                 <div className="fm-detail-row"><span className="label">Size:</span><span>{selectedFile.size}</span></div>
                 <div className="fm-detail-row"><span className="label">Type:</span><span>{selectedFile.type}</span></div>
                 <div className="fm-detail-row"><span className="label">Upload Date:</span><span>{selectedFile.upload_at}</span></div>
+                <div className="fm-detail-row"><span className="label">Upload By:</span><span>{selectedFile.owner}</span></div>
               </div>
             </div>
           </div>
