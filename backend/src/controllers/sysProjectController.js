@@ -130,9 +130,9 @@ const getProject = async (req, res) => {
 const createProject = async (req, res) => {
   try {
     const token = req.headers['x-auth-token'];
-    const { projectName, quota_bytes } = req.body;
+    const { projectName, description, quota_bytes } = req.body;
 
-    // Kiểm tra dữ liệu đầu vào
+    // 🧩 Kiểm tra dữ liệu đầu vào
     if (!projectName) {
       return res.status(400).json({ success: false, message: 'Missing project name' });
     }
@@ -144,12 +144,13 @@ const createProject = async (req, res) => {
       });
     }
 
-    // 🪄 Tạo project mới
+    // 🪄 1️⃣ Tạo project trong Keystone
     const payload = {
       project: {
         name: projectName,
         enabled: true,
         domain_id: 'default',
+        description: description || '', // thêm description nếu có
       },
     };
 
@@ -163,21 +164,20 @@ const createProject = async (req, res) => {
     const project = createRes.data.project;
     const projectId = project.id;
 
-    console.log(`Created project: ${projectName} (${projectId})`);
+    console.log(`✅ Created project: ${projectName} (${projectId})`);
 
-    // 🪄 2️⃣ Nếu có quota_bytes thì set quota cho Swift
+    // 🪄 2️⃣ Nếu có quota_bytes => set quota trong Swift
     if (quota_bytes) {
       const headers = {
         'X-Auth-Token': token,
         'X-Account-Meta-Quota-Bytes': quota_bytes.toString(),
       };
 
-      // Swift sẽ tạo account metadata nếu chưa có container
       await axios.post(`${SWIFT_URL}/AUTH_${projectId}`, null, { headers });
 
-      console.log(`Assigned quota ${quota_bytes} bytes for project ${projectId}`);
+      console.log(`✅ Assigned quota ${quota_bytes} bytes for project ${projectId}`);
     } else {
-      console.log('No quota assigned (quota_bytes not provided)');
+      console.log('⚠️ No quota assigned (quota_bytes not provided)');
     }
 
     // 🪄 3️⃣ Trả kết quả về
@@ -187,12 +187,13 @@ const createProject = async (req, res) => {
       project: {
         id: projectId,
         name: projectName,
+        description: description || '',
         quota_bytes: quota_bytes || 'unlimited',
       },
     });
 
   } catch (error) {
-    console.error('Error while creating project with quota:', error.response?.data || error.message);
+    console.error('❌ Error while creating project with quota:', error.response?.data || error.message);
 
     return res.status(error.response?.status || 500).json({
       success: false,

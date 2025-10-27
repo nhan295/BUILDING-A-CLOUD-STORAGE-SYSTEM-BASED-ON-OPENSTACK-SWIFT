@@ -2,7 +2,7 @@
 import { useState,useEffect } from 'react';
 import { FolderKanban, Plus, Settings, Users, HardDrive, Search, X, Trash2 } from 'lucide-react';
 import '../style/ProjectManagement.css';
-import {getProjects} from '../logic/ProjectManagement.js';
+import {getProjects,createProject,deleteProject} from '../logic/ProjectManagement.js';
 export default function ProjectManager() {
   const [projects, setProjects] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -13,7 +13,7 @@ export default function ProjectManager() {
   const [newProject, setNewProject] = useState({
     name: '',
     description: '',
-    quota: 100
+    quota: 10
   });
 
   const [quotaEdit, setQuotaEdit] = useState({
@@ -50,6 +50,7 @@ export default function ProjectManager() {
     fetchProjects();
   }, []);
 
+
   const formatSize = (bytes) => {
     if (!bytes) return '0 B';
     const k = 1024;
@@ -58,21 +59,42 @@ export default function ProjectManager() {
     return (bytes / Math.pow(k, i)).toFixed(2) + ' ' + sizes[i];
   };
 
-  const handleCreateProject = () => {
-    const project = {
-      id: projects.length + 1,
-      name: newProject.name,
-      description: newProject.description,
-      quota: newProject.quota * 1024 * 1024 * 1024,
-      used: 0,
-      containers: 0,
-      users: 0,
-      createdAt: new Date().toISOString().split('T')[0]
-    };
+  const handleCreateProject = async() => {
+    try {
+    const projectName = newProject.name.trim();
+    const description = newProject.description.trim();
+    const quota_bytes = newProject.quota * 1024 * 1024 * 1024; // GB → bytes
 
-    setProjects([...projects, project]);
-    setShowCreateModal(false);
-    setNewProject({ name: '', description: '', quota: 100 });
+    if (!projectName) {
+      alert("Tên project không được để trống!");
+      return;
+    }
+
+    const res = await createProject(projectName, quota_bytes, description);
+
+    if (res.success) {
+      
+      alert("Tạo project thành công!");
+      setShowCreateModal(false);
+      setNewProject({ name: '', description: '', quota: 100 });
+     const newProj = {
+    id: res.project?.id || Date.now(), // hoặc dùng id trả về từ backend
+    name: projectName,
+    description,
+    quota: quota_bytes,
+    used: 0,
+    containers: 0,
+    users: 0,
+    createdAt: new Date().toISOString().split('T')[0]
+  };
+  setProjects(prev => [...prev, newProj]);
+    } else {
+      alert(res.message || "Không thể tạo project");
+    }
+  } catch (error) {
+    console.error("Error creating project:", error);
+    alert("Đã xảy ra lỗi khi tạo project.");
+  }
   };
 
   const handleUpdateQuota = () => {
@@ -86,10 +108,22 @@ export default function ProjectManager() {
     setSelectedProject(null);
   };
 
-  const handleDeleteProject = (projectId) => {
-    if (confirm('Are you sure you want to delete this project?')) {
+  const handleDeleteProject = async(projectId) => {
+    if (!confirm('Are you sure you want to delete this project?'))
+      return;
+    try {
+    const res = await deleteProject(projectId);
+    if (res && res.success) {
+      alert('Project deleted successfully!');
       setProjects(projects.filter(p => p.id !== projectId));
+    } else {
+      alert('Failed to delete project.');
     }
+  } catch (error) {
+    console.error('Error deleting project:', error);
+    alert('An error occurred while deleting the project.');
+  }
+     
   };
 
   const openQuotaModal = (project) => {
