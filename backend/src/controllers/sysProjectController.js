@@ -5,18 +5,42 @@ const getProject = async (req, res) => {
   try {
     const token = req.headers['x-auth-token'];
 
+    // 1️⃣ Lấy danh sách project
     const projectRes = await axios.get(`${KEYSTONE_URL}/projects`, {
       headers: { 'X-Auth-Token': token },
     });
 
     const projects = projectRes.data.projects;
 
+    // 2️⃣ Lặp từng project để thêm quota + user count
     const projectsWithQuota = await Promise.all(
       projects.map(async (project) => {
         const debug = { projectId: project.id, projectName: project.name, attempts: [] };
+        let userCount = 0;
 
         try {
-          // 1) call GET to get header account
+          // 🧩 Gọi Keystone API để đếm user trong project
+          const userRes = await axios.get(
+            `${KEYSTONE_URL}/role_assignments?scope.project.id=${project.id}&include_names=True`,
+            { headers: { 'X-Auth-Token': token } }
+          );
+
+          // Mỗi role_assignment thường tương ứng 1 user
+          // lọc ra user duy nhất để tránh trùng
+          const users = [
+            ...new Set(
+              userRes.data.role_assignments
+                .filter(r => r.user) // chỉ lấy role thuộc user
+                .map(r => r.user.id)
+            ),
+          ];
+          userCount = users.length;
+        } catch (err) {
+          debug.userCountError = err.message;
+        }
+
+        // 3️⃣ Lấy quota của project trong Swift
+        try {
           const swiftGet = await axios.get(`${SWIFT_URL}/AUTH_${project.id}`, {
             headers: { 'X-Auth-Token': token },
             validateStatus: (s) => true,
@@ -24,7 +48,6 @@ const getProject = async (req, res) => {
 
           debug.attempts.push({ method: 'GET', status: swiftGet.status });
 
-          // if account is exist
           if (swiftGet.status === 200) {
             const headers = Object.fromEntries(
               Object.entries(swiftGet.headers).map(([k, v]) => [k.toLowerCase(), v])
@@ -35,69 +58,7 @@ const getProject = async (req, res) => {
             const containerCount = parseInt(headers['x-account-container-count']) || 0;
             const objectCount = parseInt(headers['x-account-object-count']) || 0;
 
-            // If bytes_used = 0, then automatically calculate the total usage by summing the sizes of all container
-            if (bytesUsed === 0) {
-              try {
-                const contRes = await axios.get(`${SWIFT_URL}/AUTH_${project.id}?format=json`, {
-                  headers: { 'X-Auth-Token': token },
-                });
-
-                const containers = contRes.data || [];
-                let totalBytes = 0;
-                let totalObjects = 0;
-
-                for (const c of containers) {
-                  try {
-                    const head = await axios.head(`${SWIFT_URL}/AUTH_${project.id}/${c.name}`, {
-                      headers: { 'X-Auth-Token': token },
-                    });
-                    const bytes = parseInt(head.headers['x-container-bytes-used']) || 0;
-                    const objs = parseInt(head.headers['x-container-object-count']) || 0;
-                    totalBytes += bytes;
-                    totalObjects += objs;
-                  } catch (err) {
-                    debug.attempts.push({ method: 'HEAD container', container: c.name, error: err.message });
-                  }
-                }
-
-                // Ghi đè lại kết quả thực tế
-                bytesUsed = totalBytes;
-              } catch (e) {
-                debug.note = `Cannot calculate bytes_used : ${e.message}`;
-              }
-            }
-
-            return {
-              ...project,
-              swift_quota: {
-                quota_bytes: quotaBytes || 'unlimited',
-                bytes_used: bytesUsed,
-                container_count: containerCount,
-                object_count: objectCount,
-                usage_percent: quotaBytes > 0 ? ((bytesUsed / quotaBytes) * 100).toFixed(2) : 0,
-              },
-              _debug: undefined,
-            };
-          }
-
-          // if GET doesn't success, try HEAD
-          const swiftHead = await axios.head(`${SWIFT_URL}/AUTH_${project.id}`, {
-            headers: { 'X-Auth-Token': token },
-            validateStatus: (s) => true,
-          });
-
-          debug.attempts.push({ method: 'HEAD', status: swiftHead.status });
-
-          if (swiftHead.status === 200) {
-            const headers = Object.fromEntries(
-              Object.entries(swiftHead.headers).map(([k, v]) => [k.toLowerCase(), v])
-            );
-
-            let quotaBytes = parseInt(headers['x-account-meta-quota-bytes']) || 0;
-            let bytesUsed = parseInt(headers['x-account-bytes-used']) || 0;
-            const containerCount = parseInt(headers['x-account-container-count']) || 0;
-            const objectCount = parseInt(headers['x-account-object-count']) || 0;
-
+            // Nếu bytes_used = 0 thì tự tính lại
             if (bytesUsed === 0) {
               try {
                 const contRes = await axios.get(`${SWIFT_URL}/AUTH_${project.id}?format=json`, {
@@ -110,18 +71,18 @@ const getProject = async (req, res) => {
                   const head = await axios.head(`${SWIFT_URL}/AUTH_${project.id}/${c.name}`, {
                     headers: { 'X-Auth-Token': token },
                   });
-                  const bytes = parseInt(head.headers['x-container-bytes-used']) || 0;
-                  totalBytes += bytes;
+                  totalBytes += parseInt(head.headers['x-container-bytes-used']) || 0;
                 }
 
                 bytesUsed = totalBytes;
               } catch (e) {
-                debug.note = `Cannot calculate bytes_used (HEAD): ${e.message}`;
+                debug.note = `Cannot calculate bytes_used : ${e.message}`;
               }
             }
 
             return {
               ...project,
+              user_count: userCount,
               swift_quota: {
                 quota_bytes: quotaBytes || 'unlimited',
                 bytes_used: bytesUsed,
@@ -133,16 +94,17 @@ const getProject = async (req, res) => {
             };
           }
 
-          // both GET and HEAD fail
-          debug.error = `Both GET and HEAD failed`;
+          // fallback nếu GET thất bại
           return {
             ...project,
+            user_count: userCount,
             swift_quota: null,
             _debug: debug,
           };
         } catch (err) {
           return {
             ...project,
+            user_count: userCount,
             swift_quota: null,
             _debug: { projectId: project.id, err: err.message },
           };
@@ -164,38 +126,79 @@ const getProject = async (req, res) => {
   }
 };
 
+
 const createProject = async (req, res) => {
   try {
     const token = req.headers['x-auth-token'];
-    const { projectName} = req.body;
+    const { projectName, quota_bytes } = req.body;
 
-    if (!projectName)
+    // Kiểm tra dữ liệu đầu vào
+    if (!projectName) {
       return res.status(400).json({ success: false, message: 'Missing project name' });
+    }
 
+    if (quota_bytes && isNaN(quota_bytes)) {
+      return res.status(400).json({
+        success: false,
+        message: 'quota_bytes must be a valid number if provided',
+      });
+    }
+
+    // 🪄 Tạo project mới
     const payload = {
       project: {
         name: projectName,
         enabled: true,
+        domain_id: 'default',
       },
     };
 
-    const response = await axios.post(`${KEYSTONE_URL}/projects`, payload, {
+    const createRes = await axios.post(`${KEYSTONE_URL}/projects`, payload, {
       headers: {
         'X-Auth-Token': token,
         'Content-Type': 'application/json',
       },
     });
 
+    const project = createRes.data.project;
+    const projectId = project.id;
+
+    console.log(`Created project: ${projectName} (${projectId})`);
+
+    // 🪄 2️⃣ Nếu có quota_bytes thì set quota cho Swift
+    if (quota_bytes) {
+      const headers = {
+        'X-Auth-Token': token,
+        'X-Account-Meta-Quota-Bytes': quota_bytes.toString(),
+      };
+
+      // Swift sẽ tạo account metadata nếu chưa có container
+      await axios.post(`${SWIFT_URL}/AUTH_${projectId}`, null, { headers });
+
+      console.log(`Assigned quota ${quota_bytes} bytes for project ${projectId}`);
+    } else {
+      console.log('No quota assigned (quota_bytes not provided)');
+    }
+
+    // 🪄 3️⃣ Trả kết quả về
     return res.status(201).json({
       success: true,
-      message: 'Create project successfully',
-      project: response.data.project,
+      message: `Project "${projectName}" created successfully${quota_bytes ? ` with quota ${quota_bytes} bytes` : ''}`,
+      project: {
+        id: projectId,
+        name: projectName,
+        quota_bytes: quota_bytes || 'unlimited',
+      },
     });
+
   } catch (error) {
-    console.error('Error while create project', error.message);
+    console.error('Error while creating project with quota:', error.response?.data || error.message);
+
     return res.status(error.response?.status || 500).json({
       success: false,
-      message: error.response?.data?.error?.message || 'Cannot create project.',
+      message:
+        error.response?.data?.error?.message ||
+        'Cannot create project or assign quota.',
     });
   }
 };

@@ -1,42 +1,10 @@
 // ProjectManager.jsx
-import { useState } from 'react';
+import { useState,useEffect } from 'react';
 import { FolderKanban, Plus, Settings, Users, HardDrive, Search, X, Trash2 } from 'lucide-react';
 import '../style/ProjectManagement.css';
-
+import {getProjects} from '../logic/ProjectManagement.js';
 export default function ProjectManager() {
-  const [projects, setProjects] = useState([
-    {
-      id: 1,
-      name: 'Production-Main',
-      description: 'Main production environment',
-      quota: 1024 * 1024 * 1024 * 1024,
-      used: 1024 * 1024 * 1024 * 850,
-      containers: 45,
-      users: 12,
-      createdAt: '2024-01-15'
-    },
-    {
-      id: 2,
-      name: 'Backup-System',
-      description: 'System backup storage',
-      quota: 1024 * 1024 * 1024 * 1024,
-      used: 1024 * 1024 * 1024 * 720,
-      containers: 8,
-      users: 4,
-      createdAt: '2024-02-20'
-    },
-    {
-      id: 3,
-      name: 'Development',
-      description: 'Development and testing',
-      quota: 1024 * 1024 * 1024 * 500,
-      used: 1024 * 1024 * 1024 * 180,
-      containers: 28,
-      users: 15,
-      createdAt: '2024-03-10'
-    }
-  ]);
-
+  const [projects, setProjects] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showQuotaModal, setShowQuotaModal] = useState(false);
@@ -51,6 +19,36 @@ export default function ProjectManager() {
   const [quotaEdit, setQuotaEdit] = useState({
     quota: 0
   });
+
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const res = await getProjects();
+
+        if (res && res.length > 0) {
+          const formatted = res.map((p) => ({
+            id: p.id,
+            name: p.name,
+            description: p.description || '(Không có mô tả)',
+            quota:
+              p.swift_quota?.quota_bytes === 'unlimited'
+                ? Infinity
+                : parseInt(p.swift_quota?.quota_bytes || 0),
+            used: parseInt(p.swift_quota?.bytes_used || 0),
+            containers: p.swift_quota?.container_count || 0,
+            users: p.user_count || 0,
+            createdAt: p.links?.self ? new Date().toISOString().split('T')[0] : '-'
+          }));
+
+          setProjects(formatted);
+        }
+      } catch (err) {
+        console.error('Fetch project error:', err);
+      }
+    };
+
+    fetchProjects();
+  }, []);
 
   const formatSize = (bytes) => {
     if (!bytes) return '0 B';
@@ -114,11 +112,7 @@ export default function ProjectManager() {
 
   return (
     <div className="pm-wrapper">
-      {/* Header */}
-      <div className="pm-page-header">
-        <h1 className="pm-page-title">Project Management</h1>
-        <p className="pm-page-subtitle">Quản lý projects và phân bổ tài nguyên</p>
-      </div>
+      
 
       {/* Actions Bar */}
       <div className="pm-toolbar">
@@ -223,7 +217,7 @@ export default function ProjectManager() {
                 />
               </div>
 
-              <div className="pm-input-group">
+               <div className="pm-input-group">
                 <label className="pm-input-label">Mô tả</label>
                 <textarea
                   className="pm-textarea-input"
