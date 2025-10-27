@@ -3,31 +3,57 @@ const axios = require('axios');
 
 const getObject = async (req, res) => {
   try {
-    const token = req.headers['x-auth-token'];
+    const token = req.headers["x-auth-token"];
     const projectId = req.project.id;
     const containerName = req.params.container;
 
     if (!containerName) {
       return res.status(400).json({
         success: false,
-        message: 'Container name is required',
+        message: "Container name is required",
       });
     }
 
-    const response = await axios.get(
+    // 📦 Lấy danh sách object cơ bản
+    const listResponse = await axios.get(
       `${SWIFT_URL}/AUTH_${projectId}/${containerName}?format=json`,
-      {
-        headers: { 'X-Auth-Token': token },
-      }
+      { headers: { "X-Auth-Token": token } }
     );
 
-    // 🧩 Swift receive data type
-    // { name, bytes, content_type, hash, last_modified }
-    const objects = response.data.map(obj => ({
-      name: obj.name,
-      size: obj.bytes, 
-      upload_at: obj.last_modified, 
-    }));
+    // ⚡ Duyệt qua từng object và gọi HEAD để lấy metadata
+    const objects = await Promise.all(
+      listResponse.data.map(async (obj) => {
+        const objectUrl = `${SWIFT_URL}/AUTH_${projectId}/${containerName}/${encodeURIComponent(
+          obj.name
+        )}`;
+
+        try {
+          const headResponse = await axios.head(objectUrl, {
+            headers: { "X-Auth-Token": token },
+          });
+
+          const headers = headResponse.headers;
+          const uploadBy = headers["x-object-meta-uploaded-by"] || "unknown";
+          const uploadTime =
+            headers["x-object-meta-upload-time"] || obj.last_modified;
+
+          return {
+            name: obj.name,
+            size: obj.bytes,
+            upload_at: uploadTime,
+            upload_by: uploadBy,
+          };
+        } catch (err) {
+          console.warn(`Cannot get metadata for ${obj.name}:`, err.message);
+          return {
+            name: obj.name,
+            size: obj.bytes,
+            upload_at: obj.last_modified,
+            upload_by: "unknown",
+          };
+        }
+      })
+    );
 
     return res.status(200).json({
       success: true,
@@ -36,13 +62,14 @@ const getObject = async (req, res) => {
       objects,
     });
   } catch (error) {
-    console.error('Get objects error:', error.message);
+    console.error("Get objects error:", error.message);
     return res.status(error.response?.status || 500).json({
       success: false,
       message: error.response?.data || error.message,
     });
   }
 };
+
 
 const newObject = async (req, res) => {
   try {
@@ -51,6 +78,7 @@ const newObject = async (req, res) => {
     const containerName = req.params.container;
     const file = req.file;
     const replace = req.query.replace === "true"; // override if exists
+    const upload_by = req.user?.username || 'unknown';
 
     if (!file) {
       return res.status(400).json({
@@ -86,6 +114,8 @@ const newObject = async (req, res) => {
       headers: {
         "X-Auth-Token": token,
         "Content-Type": file.mimetype || "application/octet-stream",
+        "X-Object-Meta-Uploaded-By": upload_by, 
+        "X-Object-Meta-Upload-Time": new Date().toISOString(),
       },
     });
 
@@ -93,6 +123,10 @@ const newObject = async (req, res) => {
       success: true,
       message: `File "${objectName}" uploaded to "${containerName}" successfully.`,
       etag: response.headers.etag,
+      metadata: {
+        uploaded_by: upload_by,
+        upload_time: new Date().toISOString(),
+      }
     });
   } catch (error) {
     console.error("Upload object error:", error.message);
@@ -102,7 +136,6 @@ const newObject = async (req, res) => {
     });
   }
 };
-
 
 
 const delObject = async (req, res) => {
