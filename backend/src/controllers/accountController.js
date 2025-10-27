@@ -1,5 +1,8 @@
 const { SWIFT_URL } = require('../config/swiftConfig');
 const axios = require('axios')
+const fs = require('fs');
+
+const LOG_PATH = '/var/log/swift/proxy-access.log';
 
 // Lấy dung lượng của project (theo account tương ứng)
 const getAccountSize = async (req, res) => {
@@ -52,43 +55,66 @@ const getAccountSize = async (req, res) => {
 };
 
 const getAccountLogs = async(req,res)=>{
-  try {
-    const { project_id } = req.params; // project id truyền trên URL
-    if (!project_id) {
+   try {
+    const projectId = req.project?.id;
+    console.log('=== DEBUG: Incoming getAccountLogs ===');
+    console.log('Project ID:', projectId);
+    console.log('Log path:', LOG_PATH);
+
+    if (!projectId) {
+      console.warn('⚠️ Missing project_id in request');
       return res.status(400).json({ success: false, message: 'Missing project_id' });
     }
 
-    // Đọc file log
+    // Kiểm tra file log tồn tại
+    const logExists = fs.existsSync(LOG_PATH);
+    console.log('DEBUG: checking log exists?', logExists);
+
+    if (!logExists) {
+      return res.status(404).json({ success: false, message: 'Log file not found' });
+    }
+
+    // Đọc nội dung log
+    console.log('DEBUG: Reading log file...');
     const data = fs.readFileSync(LOG_PATH, 'utf8');
+    console.log('DEBUG: Log file size (bytes):', Buffer.byteLength(data, 'utf8'));
 
-    // Tách từng dòng và lọc theo project
-    const logs = data
+    // Lọc dòng log theo project
+    const lines = data
       .split('\n')
-      .filter(line => line.includes(`AUTH_${project_id}`))
-      .slice(-100); // chỉ lấy 100 dòng cuối cùng cho nhẹ
+      .filter(line => line.includes(`AUTH_${projectId}`))
+      .slice(-100);
 
-    // Format gọn gàng hơn (action + file + user)
-    const formatted = logs.map(line => {
-      const match = line.match(/"(PUT|DELETE|GET)\s+([^"]+)\s+HTTP\/1\.\d".+"(\w+)"$/);
+    console.log(`DEBUG: Found ${lines.length} lines for project AUTH_${projectId}`);
+
+    // Regex Swift log
+    const regex = /\b(PUT|DELETE|GET|POST|HEAD)\b\s+(\/v1\/AUTH_[^ ]+)\s+HTTP\/1\.\d\s+(\d+)\s.*?\s([A-Za-z0-9\._-]+)?/;
+
+    const formatted = lines.map((line, index) => {
+      const match = line.match(regex);
       if (match) {
         return {
+          line: index + 1,
           action: match[1],
           path: match[2],
-          user: match[3],
-          raw: line
+          status: match[3],
+          user_or_token: match[4] || 'unknown',
         };
-      } else {
-        return { raw: line };
       }
+      return { line: index + 1, raw: line };
     });
+
+    console.log('DEBUG: Returning', formatted.length, 'formatted log entries');
 
     return res.status(200).json({
       success: true,
-      project_id,
+      project_id: projectId,
       total: formatted.length,
       logs: formatted
     });
+
   } catch (error) {
+    console.error('❌ ERROR reading Swift logs:', error.message);
     return res.status(500).json({
       success: false,
       message: 'Failed to read Swift logs',

@@ -7,5 +7,6 @@ const validateToken = require('../middleware/validateToken');
 module.exports.setup = (app)=>{
     app.use('/api/account',router);
     router.get('/account-size',validateToken,accountController.getAccountSize);
+    router.get('/logs', validateToken, accountController.getAccountLogs);
 
 }
