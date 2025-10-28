@@ -2,7 +2,7 @@
 import { useState,useEffect } from 'react';
 import { FolderKanban, Plus, Settings, Users, HardDrive, Search, X, Trash2 } from 'lucide-react';
 import '../style/ProjectManagement.css';
-import {getProjects,createProject,deleteProject} from '../logic/ProjectManagement.js';
+import {getProjects,createProject,deleteProject,updateQuota} from '../logic/ProjectManagement.js';
 export default function ProjectManager() {
   const [projects, setProjects] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -97,15 +97,27 @@ export default function ProjectManager() {
   }
   };
 
-  const handleUpdateQuota = () => {
-    const updated = projects.map(p => 
-      p.id === selectedProject.id 
-        ? { ...p, quota: quotaEdit.quota * 1024 * 1024 * 1024 }
-        : p
-    );
-    setProjects(updated);
-    setShowQuotaModal(false);
-    setSelectedProject(null);
+  const handleUpdateQuota = async() => {
+    if(!selectedProject) return;
+    const quota_bytes = quotaEdit.quota * 1024 * 1024 * 1024; // GB → bytes
+
+    try{
+      const response = await updateQuota(selectedProject.id, quota_bytes);
+      if(response.success){
+        alert('Update quota successfully!');
+        setProjects(projects.map(p => 
+          p.id === selectedProject.id 
+          ? {...p, quota: quota_bytes} 
+          : p
+        ));
+        setShowQuotaModal(false);
+        setSelectedProject(null);
+      }else{
+        alert('Failed to update quota: ' + response.message);
+      }
+    }catch(error){
+      alert('An error occurred while updating quota: ',error);
+    }
   };
 
   const handleDeleteProject = async(projectId) => {

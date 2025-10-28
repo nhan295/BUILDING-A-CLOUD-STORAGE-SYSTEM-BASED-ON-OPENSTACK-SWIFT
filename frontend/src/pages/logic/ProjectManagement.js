@@ -36,3 +36,14 @@ export const deleteProject = async(projectId)=>{
     }
 }
 
+export const updateQuota  = async(projectId, quota_bytes)=>{
+    try{
+        const response = await api.post(`/api/projects/set-quota/${projectId}`,{
+            quota_bytes
+        })
+        return response.data;
+    }catch(error){
+        console.error('Error while updating project quota', error);
+    }
+}
+
