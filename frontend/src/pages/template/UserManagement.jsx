@@ -31,11 +31,11 @@ export default function UserManagement ()  {
     user.role.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleDelete = (userId) => {
-    if (window.confirm('Are you sure you want to delete this user?')) {
-      setUsers(users.filter(user => user.userId !== userId));
-    }
-  };
+  // const handleDelete = (userId) => {
+  //   if (window.confirm('Are you sure you want to delete this user?')) {
+  //     setUsers(users.filter(user => user.userId !== userId));
+  //   }
+  // };
 
   const getRoleIcon = (role) => {
     switch (role) {
@@ -79,7 +79,7 @@ export default function UserManagement ()  {
               <th>User ID</th>
               <th>Username</th>
               <th>Role</th>
-              <th className="text-right">Actions</th>
+              
             </tr>
           </thead>
           <tbody>
@@ -105,15 +105,7 @@ export default function UserManagement ()  {
                       {user.role}
                     </span>
                   </td>
-                  <td className="text-right">
-                    <button
-                      onClick={() => handleDelete(user.userId)}
-                      className="btn-delete"
-                    >
-                      <Trash2 className="icon" />
-                      Delete
-                    </button>
-                  </td>
+                  
                 </tr>
               ))
             )}
