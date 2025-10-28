@@ -31,6 +31,8 @@ export default function SwiftContainerList() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+
 
   const roles = getStoredRoles() || [];
   const isAdmin = roles.includes("admin");
@@ -43,15 +45,23 @@ export default function SwiftContainerList() {
         const data = await getContainers();
         console.log("Containers from API:", data);
 
-        const list = data.map((item) => ({
-          name: item.name,
-          object: item.objects,
-          bytes: item.bytes,
-          lastModified: new Date(item.last_modified)
-            .toISOString()
-            .split("T")[0],
-        }));
+        const list = data.map((item) => {
+  let lastModified = "N/A";
+  try {
+    if (item.last_modified) {
+      lastModified = new Date(item.last_modified).toISOString().split("T")[0];
+    }
+  } catch {
+    lastModified = "N/A";
+  }
 
+  return {
+    name: item.name,
+    object: item.objects || 0,
+    bytes: item.bytes || 0,
+    lastModified,
+  };
+});
         setContainers(list);
       } catch (error) {
         console.error("Error loading containers:", error);
@@ -176,35 +186,49 @@ export default function SwiftContainerList() {
     setTimeout(() => setIsLoading(false), 1000);
   };
 
-  //  Create container
-  const handleCreateContainer = async () => {
-    const name = newContainerName.trim();
-    if (!name) return;
+ const handleCreateContainer = async () => {
+  const name = newContainerName.trim();
+  if (!name) {
+    alert("Please enter a container name.");
+    return;
+  }
 
-    try {
-      const res = await createContainer(name);
+  if (containers.some((c) => c.name === name)) {
+    alert(`⚠️ Container "${name}" already exists.`);
+    setNewContainerName("");
+    setShowCreateModal(false);
+    return;
+  }
 
-      if (res.success) {
-        const newContainer = {
-          name,
-          object: 0,
-          bytes: 0,
-          lastModified: new Date().toISOString().split("T")[0],
-        };
+  try {
+    setIsCreating(true); // 🚀 Khóa nút Create khi bắt đầu request
+    const res = await createContainer(name);
 
-        setContainers((prev) => [...prev, newContainer]);
-        alert(`Container "${name}" created successfully!`);
-      } else {
-        alert(`Failed to create container: ${res.message || "Unknown error"}`);
-      }
-    } catch (error) {
-      alert("Failed to create container. Please try again.");
-      console.error("Error creating container:", error);
-    } finally {
-      setNewContainerName("");
-      setShowCreateModal(false);
+    if (res.success) {
+      const newContainer = {
+        name,
+        object: 0,
+        bytes: 0,
+        lastModified: new Date().toISOString().split("T")[0],
+      };
+      setContainers((prev) => [...prev, newContainer]);
+      alert(`✅ Container "${name}" created successfully!`);
+    } else if (res.message?.toLowerCase().includes("exists")) {
+      alert(`⚠️ Container "${name}" already exists.`);
+    } else {
+      alert(`❌ Failed to create container: ${res.message || "Unknown error"}`);
     }
-  };
+  } catch (error) {
+    console.error("Error creating container:", error);
+    alert("❌ Failed to create container. Please try again.");
+  } finally {
+    setIsCreating(false); // ✅ Mở lại nút sau khi hoàn tất
+    setNewContainerName("");
+    setShowCreateModal(false);
+  }
+};
+
+
 
   //  Delete single container
   const handleDeleteContainer = async (containerName) => {
@@ -434,8 +458,11 @@ export default function SwiftContainerList() {
               >
                 Cancel
               </button>
-              <button className="btn btn-primary" onClick={handleCreateContainer}>
-                Create
+              <button 
+              className="btn btn-primary" 
+              onClick={handleCreateContainer}
+              disabled={isCreating}>
+                {isCreating ? "Creating..." : "Create"}
               </button>
             </div>
           </div>
