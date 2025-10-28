@@ -1,22 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Upload, Trash2, Search, FolderOpen, Download, Eye } from 'lucide-react';
+import { Upload, Trash2, Search, FolderOpen, Download, Eye, X } from 'lucide-react';
 import '../style/ObjectManagement.css';
 import { getObject, uploadFile, deleteObject, downloadObject } from '../logic/ObjectManagement.js';
-import { getStoredRoles } from "../../pages/logic/Login"; // added this line
+import { getStoredRoles } from "../../pages/logic/Login";
 
 export default function ObjectManagement() {
   const [objects, setObjects] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadFileName, setUploadFileName] = useState('');
   const { containerName } = useParams();
 
-  //  Get role from localStorage or context
   const roles = getStoredRoles() || [];
   const isAdmin = roles.includes("admin");
 
-  //  Fetch object list from Swift API
   useEffect(() => {
     const fetchObjects = async () => {
       try {
@@ -37,23 +37,28 @@ export default function ObjectManagement() {
     fetchObjects();
   }, [containerName]);
 
-  //  Upload file
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
     try {
+      setIsUploading(true);
+      setUploadFileName(file.name);
       setUploadProgress(0);
+
       const response = await uploadFile(containerName, file, setUploadProgress);
 
       if (response.success) {
         alert('✅ File uploaded successfully!');
+        setIsUploading(false);
+        setUploadProgress(0);
       } else {
         if (response.message?.includes('already exists')) {
           const confirmReplace = window.confirm(
             `⚠️ File "${file.name}" already exists in "${containerName}".\nDo you want to overwrite it?`
           );
           if (confirmReplace) {
+            setUploadProgress(0);
             const replaceRes = await uploadFile(containerName, file, setUploadProgress, true);
             if (replaceRes.success) {
               alert('✅ File overwritten successfully!');
@@ -61,8 +66,10 @@ export default function ObjectManagement() {
               alert('❌ Overwrite failed: ' + replaceRes.message);
             }
           }
+          setIsUploading(false);
         } else {
           alert('Upload failed: ' + response.message);
+          setIsUploading(false);
         }
       }
 
@@ -73,15 +80,16 @@ export default function ObjectManagement() {
         size: (obj.size / (1024 * 1024)).toFixed(2) + ' MB',
         upload_at: new Date(obj.upload_at).toISOString().split('T')[0],
         type: obj.name.split('.').pop(),
+        owner: obj.upload_by || 'unknown'
       }));
       setObjects(updatedList);
     } catch (error) {
       console.error('Error while uploading file:', error);
       alert('Upload failed.');
+      setIsUploading(false);
     }
   };
 
-  //  Delete file
   const handleDeleteObject = async (containerName, objectName) => {
     if (!window.confirm(`Are you sure you want to delete the file "${objectName}"?`)) return;
     try {
@@ -90,7 +98,7 @@ export default function ObjectManagement() {
         alert(`File "${objectName}" deleted successfully!`);
         setObjects(objects.filter(o => o.name !== objectName));
       } else {
-        alert(` Delete failed: ${response?.message || "Unknown error"}`);
+        alert(`Delete failed: ${response?.message || "Unknown error"}`);
       }
     } catch (error) {
       console.error("Error deleting file:", error);
@@ -143,9 +151,29 @@ export default function ObjectManagement() {
         </label>
       </div>
 
-      {uploadProgress > 0 && (
-        <div className="fm-upload-progress">
-          {/* you can add progress bar display here */}
+      {/* Upload Progress Toast */}
+      {isUploading && (
+        <div className="fm-upload-toast">
+          <div className="fm-toast-header">
+            <div className="fm-toast-title">
+              <Upload size={16} />
+              <span>Uploading</span>
+            </div>
+            <button 
+              className="fm-toast-close"
+              onClick={() => setIsUploading(false)}
+            >
+              <X size={16} />
+            </button>
+          </div>
+          <div className="fm-toast-filename">{uploadFileName}</div>
+          <div className="fm-progress-container">
+            <div 
+              className="fm-progress-bar" 
+              style={{ width: `${uploadProgress}%` }}
+            />
+          </div>
+          <div className="fm-progress-text">{uploadProgress}%</div>
         </div>
       )}
 
@@ -187,7 +215,6 @@ export default function ObjectManagement() {
                           onClick={() => handleDownload(containerName, file.name)}>
                           <Download size={18} />
                         </button>
-                        {/*  Only show delete button if user is admin */}
                         {isAdmin && (
                           <button className="fm-action-btn delete" onClick={() => handleDeleteObject(containerName, file.name)}>
                             <Trash2 size={18} />
@@ -223,4 +250,4 @@ export default function ObjectManagement() {
       </div>
     </div>
   );
-};
+}
