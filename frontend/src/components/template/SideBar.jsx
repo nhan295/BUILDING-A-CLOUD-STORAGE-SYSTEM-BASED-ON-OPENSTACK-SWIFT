@@ -120,18 +120,6 @@ export default function SideBar() {
               <HardDrive size={18} />
               <span>Containers</span>
             </a>
-            
-            <a 
-              href="/upload" 
-              className={`nav-link ${activeLink === 'upload' ? 'active' : ''}`}
-              onClick={(e) => {
-                e.preventDefault();
-                handleLinkClick('upload', '/upload');
-              }}
-            >
-              <Upload size={18} />
-              <span>Upload</span>
-            </a>
 
             {role === 'admin' && (
               <>
