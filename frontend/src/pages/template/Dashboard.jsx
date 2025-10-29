@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Container, Upload, HardDrive, Users, TrendingUp, Activity, Database, FileText, Folder, FolderKanban, Server } from 'lucide-react';
 import '../style/Dashboard.css';
 import { getStoredRoles, getStoredProjectInfo } from '../../pages/logic/Login';
-import { totalContainer, totalProjectUser, projectSize } from '../../pages/logic/Dashboard';
+import { totalContainer, totalProjectUser, projectSize, getSysProjects } from '../../pages/logic/Dashboard';
 
 export default function SwiftDashboard() {
   const [stats, setStats] = useState({
@@ -35,116 +35,100 @@ export default function SwiftDashboard() {
   const [recentActivities, setRecentActivities] = useState([]);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        if (isSuperAdmin) {
-          // TODO: Thêm API calls cho Super Admin
-          // Ví dụ: getAllProjects(), getAllSystemUsers(), getSystemStorage()
-          
-          // Mock data cho Super Admin
-          setSystemStats({
-            totalProjects: 15,
-            totalUsers: 48,
-            totalStorage: 1024 * 1024 * 1024 * 1024 * 5, // 5TB
-            usedStorage: 1024 * 1024 * 1024 * 1024 * 3.2, // 3.2TB
-            activeProjects: 12
-          });
+  const fetchData = async () => {
+    try {
+      if (isSuperAdmin) {
+        // gọi API sys projects
+        const sysData = await getSysProjects();
 
-          // Mock data cho Top Projects by Resource Usage
-          setTopProjects([
-            { 
-              id: 1, 
-              name: 'Production-Main', 
-              storage: 1024 * 1024 * 1024 * 1024 * 0.85, // 850GB
-              containers: 45,
-              objects: 12847,
-              users: 12,
-              quota: 1024 * 1024 * 1024 * 1024 * 1 // 1TB
-            },
-            { 
-              id: 2, 
-              name: 'Backup-System', 
-              storage: 1024 * 1024 * 1024 * 1024 * 0.72, // 720GB
-              containers: 8,
-              objects: 3241,
-              users: 4,
-              quota: 1024 * 1024 * 1024 * 1024 * 1 // 1TB
-            },
-            { 
-              id: 3, 
-              name: 'Data-Analytics', 
-              storage: 1024 * 1024 * 1024 * 1024 * 0.65, // 650GB
-              containers: 28,
-              objects: 8956,
-              users: 8,
-              quota: 1024 * 1024 * 1024 * 800 // 800GB
-            },
-            { 
-              id: 4, 
-              name: 'Marketing-Assets', 
-              storage: 1024 * 1024 * 1024 * 512, // 512GB
-              containers: 18,
-              objects: 5432,
-              users: 6,
-              quota: 1024 * 1024 * 1024 * 1024 * 1 // 1TB
-            },
-            { 
-              id: 5, 
-              name: 'Development-Test', 
-              storage: 1024 * 1024 * 1024 * 380, // 380GB
-              containers: 34,
-              objects: 6789,
-              users: 15,
-              quota: 1024 * 1024 * 1024 * 500 // 500GB
-            }
-          ]);
+        // bảo vệ nếu API không trả về đúng cấu trúc
+        const projects = Array.isArray(sysData?.projects) ? sysData.projects : [];
 
-          setRecentActivities([
-            { id: 1, type: 'create', user: 'System', file: 'Project "Marketing" created', time: '10 phút trước', size: '-' },
-            { id: 2, type: 'upload', user: 'project-dev', file: 'Large dataset uploaded', time: '25 phút trước', size: '15.2 GB' },
-            { id: 3, type: 'create', user: 'admin@company.com', file: 'New user registered', time: '1 giờ trước', size: '-' },
-            { id: 4, type: 'delete', user: 'project-old', file: 'Project "Test2023" deleted', time: '2 giờ trước', size: '-' },
-            { id: 5, type: 'upload', user: 'project-backup', file: 'System backup completed', time: '3 giờ trước', size: '42.8 GB' }
-          ]);
+        // tổng project: ưu tiên sysData.total nếu có, ngược lại dùng length
+        const totalProjects = typeof sysData?.total === 'number' ? sysData.total : projects.length;
+
+        // tổng users = tổng user_count của tất cả project
+        const totalUsers = projects.reduce((sum, p) => sum + (Number(p.user_count) || 0), 0);
+
+        // tổng bytes used (sum của swift_quota.bytes_used)
+        const totalUsedBytes = projects.reduce((sum, p) => {
+          const used = Number(p.swift_quota?.bytes_used) || 0;
+          return sum + used;
+        }, 0);
+
+        // cập nhật systemStats — giữ lại các field khác nếu đã có
+        setSystemStats(prev => ({
+          ...prev,
+          totalProjects,
+          totalUsers,
+          usedStorage: totalUsedBytes,
+          totalStorage: 50 * 1024 * 1024 * 1024 // Giả định tổng 50GB
+        }));
+
+        // 🔥 CẬP NHẬT LẠI setTopProjects DÙNG DỮ LIỆU THẬT
+        if (projects.length > 0) {
+          const formatted = projects.map((p) => ({
+            id: p.id,
+            name: p.name,
+            storage: Number(p.swift_quota?.bytes_used) || 0,
+            containers: p.swift_quota?.container_count || 0,
+            users: p.user_count || 0,
+            quota:
+              p.swift_quota?.quota_bytes === 'unlimited'
+                ? Infinity
+                : Number(p.swift_quota?.quota_bytes || 0),
+          }));
+
+          // Lấy top 5 project sử dụng storage nhiều nhất
+          const top = formatted
+            .sort((a, b) => b.storage - a.storage)
+            .slice(0, 5);
+
+          setTopProjects(top);
         } else {
-          // Project Admin - existing logic
-          const containersData = await totalContainer();
-          const totalContainers = containersData.length;
-          const totalObjects = containersData.reduce((sum, c) => sum + (c.objects || c.count || 0), 0);
-          const totalBytes = containersData.reduce((sum, c) => sum + (c.bytes || 0), 0);
-
-          const totalUsers = await totalProjectUser();
-          const { quota_bytes } = await projectSize();
-
-          setStats({
-            totalStorage: quota_bytes,
-            usedStorage: totalBytes,
-            containers: totalContainers,
-            objects: totalObjects,
-            users: totalUsers
-          });
-
-          console.log("== Dashboard Data ==");
-          console.log("Containers:", totalContainers);
-          console.log("Objects:", totalObjects);
-          console.log("Used bytes:", totalBytes);
-          console.log("Total quota bytes:", quota_bytes);
-
-          setRecentActivities([
-            { id: 1, type: 'upload', user: 'admin@project.com', file: 'backup-2025.tar.gz', time: '5 phút trước', size: '2.4 GB' },
-            { id: 2, type: 'delete', user: 'user1@project.com', file: 'old-logs.zip', time: '12 phút trước', size: '856 MB' },
-            { id: 3, type: 'download', user: 'dev@project.com', file: 'database-dump.sql', time: '28 phút trước', size: '1.2 GB' },
-            { id: 4, type: 'upload', user: 'admin@project.com', file: 'images-archive.zip', time: '1 giờ trước', size: '3.8 GB' },
-            { id: 5, type: 'create', user: 'user2@project.com', file: 'new-container', time: '2 giờ trước', size: '-' }
-          ]);
+          setTopProjects([]); // fallback rỗng nếu không có data
         }
-      } catch (error) {
-        console.error("Error while fetch dashboard data:", error);
-      }
-    };
 
-    fetchData();
-  }, [isSuperAdmin]);
+        // giữ nguyên recentActivities
+        setRecentActivities([
+          { id: 1, type: 'create', user: 'System', file: 'Project "Marketing" created', time: '10 phút trước', size: '-' },
+          { id: 2, type: 'upload', user: 'project-dev', file: 'Large dataset uploaded', time: '25 phút trước', size: '15.2 GB' },
+          { id: 3, type: 'create', user: 'admin@company.com', file: 'New user registered', time: '1 giờ trước', size: '-' },
+          { id: 4, type: 'delete', user: 'project-old', file: 'Project "Test2023" deleted', time: '2 giờ trước', size: '-' },
+          { id: 5, type: 'upload', user: 'project-backup', file: 'System backup completed', time: '3 giờ trước', size: '42.8 GB' }
+        ]);
+      } else {
+        // Project Admin logic như trước
+        const containersData = await totalContainer();
+        const totalContainers = containersData.length;
+        const totalObjects = containersData.reduce((sum, c) => sum + (c.objects || c.count || 0), 0);
+        const totalBytes = containersData.reduce((sum, c) => sum + (c.bytes || 0), 0);
+        const totalUsers = await totalProjectUser();
+        const { quota_bytes } = await projectSize();
+
+        setStats({
+          totalStorage: quota_bytes,
+          usedStorage: totalBytes,
+          containers: totalContainers,
+          objects: totalObjects,
+          users: totalUsers
+        });
+
+        setRecentActivities([
+          { id: 1, type: 'upload', user: 'admin@project.com', file: 'backup-2025.tar.gz', time: '5 phút trước', size: '2.4 GB' },
+          { id: 2, type: 'delete', user: 'user1@project.com', file: 'old-logs.zip', time: '12 phút trước', size: '856 MB' },
+          { id: 3, type: 'download', user: 'dev@project.com', file: 'database-dump.sql', time: '28 phút trước', size: '1.2 GB' },
+          { id: 4, type: 'upload', user: 'admin@project.com', file: 'images-archive.zip', time: '1 giờ trước', size: '3.8 GB' },
+          { id: 5, type: 'create', user: 'user2@project.com', file: 'new-container', time: '2 giờ trước', size: '-' }
+        ]);
+      }
+    } catch (error) {
+      console.error("Error while fetching dashboard data:", error);
+    }
+  };
+
+  fetchData();
+}, [isSuperAdmin]);
 
   const formatSize = (bytes) => {
     if (!bytes) return '0 B';
@@ -283,10 +267,7 @@ export default function SwiftDashboard() {
                           <Container size={14} />
                           {project.containers} containers
                         </span>
-                        <span className="project-stat">
-                          <FileText size={14} />
-                          {project.objects.toLocaleString()} objects
-                        </span>
+                        
                         <span className="project-stat">
                           <Users size={14} />
                           {project.users} users

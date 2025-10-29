@@ -44,9 +44,21 @@ export const projectSize = async()=> {
     }
 }
 
+export const getSysProjects = async()=> {
+    try{
+        const response = await api.get('/api/projects/');
+        return response.data || [];   
+    }catch(error){
+        console.error('Error while fetching project list', error);
+    }
+}
+
+
+
 export default {
     totalContainer,
     totalObject,
     totalProjectUser,
-    projectSize
+    projectSize,
+    getSysProjects
 }
