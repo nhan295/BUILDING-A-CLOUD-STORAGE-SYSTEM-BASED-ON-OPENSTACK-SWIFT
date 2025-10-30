@@ -7,3 +7,53 @@ export const getUsers = async()=>{
         console.error('Error while get users list', error);
     }
 }
+
+//======================== system admin  UI ==========================//
+
+export const getProjects = async()=> {
+    try{
+        const response = await api.get('/api/projects/');
+        return response.data.projects || [];   
+    }catch(error){
+        console.error('Error while fetching project list', error);
+    }
+}
+
+export const getSysUsers = async()=>{
+    try{
+        const response = await api.get('/api/users/')
+        return response.data.users || [];
+    }catch(error){
+        console.error('Error while get system users list', error);
+    }
+}
+
+export const createUser = async(username,password)=>{
+    try{
+        const response = await api.post('/api/users/create-user',{
+            username,
+            password
+        })
+        return response.data;
+    }catch(error){
+        console.error('Error while create user', error);
+    }
+}
+
+export const deleteUser = async(userId)=>{
+    try{
+        const response = await api.delete(`/api/users/delete/${userId}`)
+        if(response.data.success){
+            return{
+                success: true,
+                message: response.data.message
+            }
+        }
+    }catch(error){
+        console.error('Error while delete user', error);
+    }
+}
+
+export const assignUsertoProject = async()=>{
+
+}

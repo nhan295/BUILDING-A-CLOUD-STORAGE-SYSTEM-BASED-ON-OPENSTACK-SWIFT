@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Trash2, Search, Shield, UserCheck, Plus, X, Mail, Key } from 'lucide-react';
-import { getUsers } from '../logic/UserManagement.js';
+import { getUsers, getSysUsers, getProjects, deleteUser, createUser } from '../logic/UserManagement.js';
 import { getStoredRoles, getStoredProjectInfo } from '../../pages/logic/Login';
 import '../style/UserManagement.css';
 
@@ -12,6 +12,7 @@ export default function UserManagement() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [newUser, setNewUser] = useState({ username: '', password: '' });
   const [assignData, setAssignData] = useState({ projectName: '', role: 'member' });
+  const [projects, setProjects] = useState([]);
 
   const roles = getStoredRoles() || [];
   const role = roles.includes('admin') ? 'admin' : 'member';
@@ -20,75 +21,115 @@ export default function UserManagement() {
 
   const isSuperAdmin = role === 'admin' && projectName.toLowerCase() === 'admin';
 
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        if (isSuperAdmin) {
-          const mockSystemUsers = [
-            { id: 1, name: 'admin@system.com', roles: ['admin'], projects: ['Admin', 'Project A', 'Project B'] },
-            { id: 2, name: 'john.doe@company.com', roles: ['admin'], projects: ['Project A'] },
-            { id: 3, name: 'jane.smith@company.com', roles: ['member'], projects: ['Project A', 'Project C'] },
-            { id: 4, name: 'bob.wilson@company.com', roles: ['admin'], projects: ['Project B'] },
-            { id: 5, name: 'alice.jones@company.com', roles: ['member'], projects: ['Project B', 'Project D'] },
-            { id: 6, name: 'charlie.brown@company.com', roles: ['member'], projects: ['Project C'] },
-            { id: 7, name: 'david.lee@company.com', roles: ['admin'], projects: ['Project D'] },
-            { id: 8, name: 'emma.davis@company.com', roles: ['member'], projects: ['Project A', 'Project B'] },
-          ];
+  const fetchData = async () => {
+    try {
+      if (isSuperAdmin) {
+        // Fetch both system users and all projects concurrently
+        const [sysData, projectRes] = await Promise.all([getSysUsers(), getProjects()]);
 
-          const formattedUsers = mockSystemUsers.map(u => ({
-            userId: u.id,
-            username: u.name,
-            role: u.roles[0],
-            projects: u.projects,
+        console.log('=== DEBUG sysData ===', sysData);
+        console.log('=== DEBUG projects ===', projectRes);
+
+        // Format projects
+        let formattedProjects = [];
+        if (Array.isArray(projectRes)) {
+          formattedProjects = projectRes.map(p => ({
+            id: p.id,
+            name: p.name
           }));
+          setProjects(formattedProjects);
+        }
+
+        // Format users
+        if (Array.isArray(sysData)) {
+          const formattedUsers = sysData.map((u, index) => {
+            const projectList = u.projects?.map(p => {
+              const roles = p.roles?.filter(r => r !== '(no role)');
+              const roleText = roles?.length ? `(${roles.join(', ')})` : '(no role)';
+              return `${p.name} ${roleText}`;
+            }) || [];
+
+            const allRoles = u.projects?.flatMap(p => p.roles || []) || [];
+            let primaryRole = 'unassigned';
+            if (allRoles.includes('admin')) primaryRole = 'admin';
+            else if (allRoles.includes('ResellerAdmin')) primaryRole = 'reseller';
+            else if (allRoles.includes('member')) primaryRole = 'member';
+
+            return {
+              userId: u.id || index + 1,
+              username: u.name,
+              role: primaryRole,
+              projects: projectList,
+            };
+          });
+
           setUsers(formattedUsers);
         } else {
-          const fetchedUsers = await getUsers();
-          const formattedUsers = fetchedUsers.map((u, index) => ({
-            userId: u.id || index + 1,
-            username: u.name,
-            role: u.roles?.[0] || 'user',
-            projects: u.projects || [],
-          }));
-          setUsers(formattedUsers);
+          console.warn('Unexpected sysData format:', sysData);
         }
-      } catch (error) {
-        console.error('Error while loading users:', error);
+      } else {
+        // For regular project admin
+        const fetchedUsers = await getUsers();
+        const formattedUsers = fetchedUsers.map((u, index) => ({
+          userId: u.id || index + 1,
+          username: u.name,
+          role: u.roles?.[0] || 'user',
+          projects: u.projects || [],
+        }));
+        setUsers(formattedUsers);
       }
-    };
+    } catch (error) {
+      console.error('Error while loading users/projects:', error);
+    }
+  };
 
-    fetchUsers();
+  useEffect(() => {
+    fetchData();
   }, [isSuperAdmin]);
 
   const filteredUsers = users.filter(user =>
-    user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.role.toLowerCase().includes(searchTerm.toLowerCase())
+    user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.role?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleCreateUser = async (e) => {
     e.preventDefault();
+
     if (!newUser.username || !newUser.password) {
-      alert('Vui lòng điền đầy đủ thông tin');
+      alert('Please fill in all required fields.');
       return;
     }
 
-    const mockNewUser = {
-      userId: users.length + 1,
-      username: newUser.username,
-      role: 'member',
-      projects: [],
-    };
+    try {
+      const response = await createUser(newUser.username, newUser.password);
 
-    setUsers([...users, mockNewUser]);
-    alert('Tạo user thành công!');
-    setShowCreateModal(false);
-    setNewUser({ username: '', password: '' });
+      if (response && response.success) {
+        const createdUser = response.user || {
+          userId: users.length + 1,
+          username: newUser.username,
+          role: 'unassigned',
+          projects: [],
+        };
+
+        setUsers(prev => [...prev, createdUser]);
+        alert('User created successfully!');
+        await fetchData();
+      } else {
+        alert(response?.message || 'Unable to create user. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error while creating user:', error);
+      alert('An error occurred while creating the user.');
+    } finally {
+      setShowCreateModal(false);
+      setNewUser({ username: '', password: '' });
+    }
   };
 
   const handleAssignToProject = async (e) => {
     e.preventDefault();
     if (!assignData.projectName) {
-      alert('Vui lòng nhập tên project');
+      alert('Please select a project.');
       return;
     }
 
@@ -104,16 +145,26 @@ export default function UserManagement() {
     });
 
     setUsers(updatedUsers);
-    alert(`Đã gán ${selectedUser.username} vào project "${assignData.projectName}" với vai trò ${assignData.role}`);
+    alert(`User "${selectedUser.username}" has been assigned to project "${assignData.projectName}" as ${assignData.role}.`);
     setShowAssignModal(false);
     setAssignData({ projectName: '', role: 'member' });
     setSelectedUser(null);
   };
 
-  const handleDelete = (userId) => {
-    if (window.confirm('Bạn có chắc muốn xóa user này?')) {
-      setUsers(users.filter(user => user.userId !== userId));
-      alert('Đã xóa user thành công!');
+  const handleDelete = async (userId) => {
+    if (!window.confirm('Are you sure you want to delete this user?')) return;
+
+    try {
+      const res = await deleteUser(userId);
+      if (res && res.success) {
+        alert('User deleted successfully!');
+        setUsers(users.filter(user => user.userId !== userId));
+      } else {
+        alert('Failed to delete user.');
+      }
+    } catch (error) {
+      console.error('Error while deleting user:', error);
+      alert('An error occurred while deleting the user.');
     }
   };
 
@@ -125,7 +176,7 @@ export default function UserManagement() {
     }
   };
 
-  // Super Admin View
+  // ===== Super Admin View =====
   if (isSuperAdmin) {
     return (
       <div className="um-container">
@@ -137,13 +188,13 @@ export default function UserManagement() {
             <div>
               <h1 className="um-title">System User Management</h1>
               <p className="um-subtitle">
-                Quản lý tất cả users trong hệ thống
+                Manage all users across the system
                 <span className="um-badge-sysadmin">System Admin</span>
               </p>
             </div>
             <button className="um-btn-create" onClick={() => setShowCreateModal(true)}>
               <Plus className="um-icon" />
-              Tạo User
+              Create User
             </button>
           </div>
         </div>
@@ -153,7 +204,7 @@ export default function UserManagement() {
             <Search className="um-search-icon" />
             <input
               type="text"
-              placeholder="Tìm kiếm theo username hoặc role..."
+              placeholder="Search by username or role..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="um-search-input"
@@ -177,7 +228,7 @@ export default function UserManagement() {
                 <tr>
                   <td colSpan="5" className="um-empty-state">
                     <Users className="um-empty-icon" />
-                    <p>Không tìm thấy user</p>
+                    <p>No users found</p>
                   </td>
                 </tr>
               ) : (
@@ -215,14 +266,14 @@ export default function UserManagement() {
                         }}
                       >
                         <UserCheck className="um-icon" />
-                        Gán
+                        Assign
                       </button>
                       <button
                         className="um-btn-delete"
                         onClick={() => handleDelete(user.userId)}
                       >
                         <Trash2 className="um-icon" />
-                        Xóa
+                        Delete
                       </button>
                     </td>
                   </tr>
@@ -232,12 +283,12 @@ export default function UserManagement() {
           </table>
         </div>
 
-        {/* Create User Modal */}
+        {/* ===== Create User Modal ===== */}
         {showCreateModal && (
           <div className="um-modal-overlay" onClick={() => setShowCreateModal(false)}>
             <div className="um-modal-content" onClick={(e) => e.stopPropagation()}>
               <div className="um-modal-header">
-                <h2>Tạo User Mới</h2>
+                <h2>Create New User</h2>
                 <button className="um-modal-close" onClick={() => setShowCreateModal(false)}>
                   <X className="um-icon" />
                 </button>
@@ -251,7 +302,7 @@ export default function UserManagement() {
                       type="text"
                       value={newUser.username}
                       onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
-                      placeholder="Nhập email hoặc username"
+                      placeholder="Enter username"
                       className="um-form-input um-with-icon"
                     />
                   </div>
@@ -264,17 +315,17 @@ export default function UserManagement() {
                       type="password"
                       value={newUser.password}
                       onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                      placeholder="Nhập mật khẩu"
+                      placeholder="Enter password"
                       className="um-form-input um-with-icon"
                     />
                   </div>
                 </div>
                 <div className="um-modal-actions">
                   <button type="button" className="um-btn-cancel" onClick={() => setShowCreateModal(false)}>
-                    Hủy
+                    Cancel
                   </button>
                   <button type="submit" className="um-btn-submit">
-                    Tạo User
+                    Create
                   </button>
                 </div>
               </form>
@@ -282,12 +333,12 @@ export default function UserManagement() {
           </div>
         )}
 
-        {/* Assign Modal */}
+        {/* ===== Assign Modal ===== */}
         {showAssignModal && selectedUser && (
           <div className="um-modal-overlay" onClick={() => setShowAssignModal(false)}>
             <div className="um-modal-content" onClick={(e) => e.stopPropagation()}>
               <div className="um-modal-header">
-                <h2>Gán User vào Project</h2>
+                <h2>Assign User to Project</h2>
                 <button className="um-modal-close" onClick={() => setShowAssignModal(false)}>
                   <X className="um-icon" />
                 </button>
@@ -299,33 +350,38 @@ export default function UserManagement() {
                     <Mail size={16} /> {selectedUser.username}
                   </div>
                 </div>
+
                 <div className="um-form-group">
-                  <label>Tên Project</label>
-                  <input
-                    type="text"
+                  <label>Select Project</label>
+                  <select
                     value={assignData.projectName}
                     onChange={(e) => setAssignData({ ...assignData, projectName: e.target.value })}
-                    placeholder="Nhập tên project"
                     className="um-form-input"
-                  />
+                  >
+                    <option value="">-- Select Project --</option>
+                    {projects.map((p) => (
+                      <option key={p.id} value={p.name}>{p.name}</option>
+                    ))}
+                  </select>
                 </div>
+
                 <div className="um-form-group">
-                  <label>Vai trò</label>
+                  <label>Role</label>
                   <select
                     value={assignData.role}
                     onChange={(e) => setAssignData({ ...assignData, role: e.target.value })}
                     className="um-form-input"
                   >
-                    <option value="member">Member</option>
                     <option value="admin">Admin</option>
+                    <option value="member">Member</option>
                   </select>
                 </div>
                 <div className="um-modal-actions">
                   <button type="button" className="um-btn-cancel" onClick={() => setShowAssignModal(false)}>
-                    Hủy
+                    Cancel
                   </button>
                   <button type="submit" className="um-btn-submit">
-                    Gán vào Project
+                    Assign
                   </button>
                 </div>
               </form>
@@ -336,7 +392,7 @@ export default function UserManagement() {
     );
   }
 
-  // Project Admin View
+  // ===== Project Admin View =====
   return (
     <div className="um-container">
       <div className="um-header-card">
@@ -346,7 +402,7 @@ export default function UserManagement() {
           </div>
           <div>
             <h1 className="um-title">User Management</h1>
-            <p className="um-subtitle">Danh sách users trong project</p>
+            <p className="um-subtitle">List of users in this project</p>
           </div>
         </div>
       </div>
@@ -356,7 +412,7 @@ export default function UserManagement() {
           <Search className="um-search-icon" />
           <input
             type="text"
-            placeholder="Tìm kiếm theo username hoặc role..."
+            placeholder="Search by username or role..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="um-search-input"
@@ -378,7 +434,7 @@ export default function UserManagement() {
               <tr>
                 <td colSpan="3" className="um-empty-state">
                   <Users className="um-empty-icon" />
-                  <p>Không tìm thấy user</p>
+                  <p>No users found</p>
                 </td>
               </tr>
             ) : (

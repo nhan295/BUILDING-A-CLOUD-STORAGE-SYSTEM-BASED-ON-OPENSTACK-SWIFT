@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const containerController = require('../controllers/containerController');
 const validateToken = require('../middleware/validateToken');
-//const checkRole = require('../middleware/checkRole');
 
 module.exports.setup = (app)=>{
     app.use('/api/containers',router);

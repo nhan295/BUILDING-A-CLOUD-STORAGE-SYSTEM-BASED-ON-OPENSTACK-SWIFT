@@ -64,7 +64,6 @@ const getUsers = async(req,res)=>{
           return {
             id: user.id,
             name: user.name,
-            email: user.email || null,
             enabled: user.enabled,
             domain_id: user.domain_id,
             projects: projectsWithRoles,
