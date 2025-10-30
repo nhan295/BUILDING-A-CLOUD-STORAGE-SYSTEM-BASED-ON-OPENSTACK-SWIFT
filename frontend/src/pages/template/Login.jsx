@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Cloud, Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Cloud, Lock, Eye, EyeOff, AlertCircle, User } from 'lucide-react';
 import { handleLogin, getAvailableDomains } from '../logic/Login.js';
 import '../style/Login.css';
 
@@ -108,7 +108,7 @@ export default function LoginPage() {
             <div className="form-group">
               <label className="form-label">Username</label>
               <div className="form-input-wrapper">
-                <Mail className="form-input-icon" />
+                <User className="form-input-icon" />
                 <input
                   type="text"
                   value={username}
