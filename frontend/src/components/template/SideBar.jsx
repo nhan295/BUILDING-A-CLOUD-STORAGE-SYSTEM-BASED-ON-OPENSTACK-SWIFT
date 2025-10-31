@@ -67,6 +67,18 @@ export default function SideBar() {
         {isSuperAdmin ? (
           <>
             <div className="section-title">System Administration</div>
+
+            <a 
+              href="/dashboard" 
+              className={`nav-link ${activeLink === 'dashboard' ? 'active' : ''}`}
+              onClick={(e) => {
+                e.preventDefault();
+                handleLinkClick('dashboard', '/dashboard');
+              }}
+            >
+              <BarChart3 size={18} />
+              <span>Dashboard</span>
+            </a>
             
             <a 
               href="/project-manager" 
@@ -80,17 +92,7 @@ export default function SideBar() {
               <span>Projects</span>
             </a>
 
-            <a 
-              href="/dashboard" 
-              className={`nav-link ${activeLink === 'dashboard' ? 'active' : ''}`}
-              onClick={(e) => {
-                e.preventDefault();
-                handleLinkClick('dashboard', '/dashboard');
-              }}
-            >
-              <BarChart3 size={18} />
-              <span>Dashboard</span>
-            </a>
+            
             
             <a 
               href="/user-manager" 
@@ -134,7 +136,7 @@ export default function SideBar() {
                   }}
                 >
                   <BarChart3 size={18} />
-                  <span>Statitic</span>
+                  <span>Dashboard</span>
                 </a>
                 
                 <a 

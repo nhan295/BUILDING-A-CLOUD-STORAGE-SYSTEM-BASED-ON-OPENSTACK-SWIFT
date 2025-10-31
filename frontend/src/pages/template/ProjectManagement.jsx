@@ -1,8 +1,8 @@
-// ProjectManager.jsx
-import { useState,useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { FolderKanban, Plus, Settings, Users, HardDrive, Search, X, Trash2 } from 'lucide-react';
 import '../style/ProjectManagement.css';
-import {getProjects,createProject,deleteProject,updateQuota} from '../logic/ProjectManagement.js';
+import { getProjects, createProject, deleteProject, updateQuota } from '../logic/ProjectManagement.js';
+
 export default function ProjectManager() {
   const [projects, setProjects] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -29,7 +29,7 @@ export default function ProjectManager() {
           const formatted = res.map((p) => ({
             id: p.id,
             name: p.name,
-            description: p.description || '(Không có mô tả)',
+            description: p.description || '(No description)',
             quota:
               p.swift_quota?.quota_bytes === 'unlimited'
                 ? Infinity
@@ -50,7 +50,6 @@ export default function ProjectManager() {
     fetchProjects();
   }, []);
 
-
   const formatSize = (bytes) => {
     if (!bytes) return '0 B';
     const k = 1024;
@@ -59,83 +58,82 @@ export default function ProjectManager() {
     return (bytes / Math.pow(k, i)).toFixed(2) + ' ' + sizes[i];
   };
 
-  const handleCreateProject = async() => {
+  const handleCreateProject = async () => {
     try {
-    const projectName = newProject.name.trim();
-    const description = newProject.description.trim();
-    const quota_bytes = newProject.quota * 1024 * 1024 * 1024; // GB → bytes
+      const projectName = newProject.name.trim();
+      const description = newProject.description.trim();
+      const quota_bytes = newProject.quota * 1024 * 1024 * 1024; // GB → bytes
 
-    if (!projectName) {
-      alert("Tên project không được để trống!");
-      return;
+      if (!projectName) {
+        alert("Project name cannot be empty!");
+        return;
+      }
+
+      const res = await createProject(projectName, quota_bytes, description);
+
+      if (res.success) {
+        alert("Project created successfully!");
+        setShowCreateModal(false);
+        setNewProject({ name: '', description: '', quota: 100 });
+
+        const newProj = {
+          id: res.project?.id || Date.now(),
+          name: projectName,
+          description,
+          quota: quota_bytes,
+          used: 0,
+          containers: 0,
+          users: 0,
+          createdAt: new Date().toISOString().split('T')[0]
+        };
+        setProjects(prev => [...prev, newProj]);
+      } else {
+        alert(res.message || "Failed to create project");
+      }
+    } catch (error) {
+      console.error("Error creating project:", error);
+      alert("An error occurred while creating the project.");
     }
-
-    const res = await createProject(projectName, quota_bytes, description);
-
-    if (res.success) {
-      
-      alert("Tạo project thành công!");
-      setShowCreateModal(false);
-      setNewProject({ name: '', description: '', quota: 100 });
-     const newProj = {
-    id: res.project?.id || Date.now(), // hoặc dùng id trả về từ backend
-    name: projectName,
-    description,
-    quota: quota_bytes,
-    used: 0,
-    containers: 0,
-    users: 0,
-    createdAt: new Date().toISOString().split('T')[0]
-  };
-  setProjects(prev => [...prev, newProj]);
-    } else {
-      alert(res.message || "Không thể tạo project");
-    }
-  } catch (error) {
-    console.error("Error creating project:", error);
-    alert("Đã xảy ra lỗi khi tạo project.");
-  }
   };
 
-  const handleUpdateQuota = async() => {
-    if(!selectedProject) return;
-    const quota_bytes = quotaEdit.quota * 1024 * 1024 * 1024; // GB → bytes
+  const handleUpdateQuota = async () => {
+    if (!selectedProject) return;
+    const quota_bytes = quotaEdit.quota * 1024 * 1024 * 1024;
 
-    try{
+    try {
       const response = await updateQuota(selectedProject.id, quota_bytes);
-      if(response.success){
-        alert('Update quota successfully!');
-        setProjects(projects.map(p => 
-          p.id === selectedProject.id 
-          ? {...p, quota: quota_bytes} 
-          : p
+      if (response.success) {
+        alert('Quota updated successfully!');
+        setProjects(projects.map(p =>
+          p.id === selectedProject.id
+            ? { ...p, quota: quota_bytes }
+            : p
         ));
         setShowQuotaModal(false);
         setSelectedProject(null);
-      }else{
+      } else {
         alert('Failed to update quota: ' + response.message);
       }
-    }catch(error){
-      alert('An error occurred while updating quota: ',error);
+    } catch (error) {
+      alert('An error occurred while updating quota: ', error);
     }
   };
 
-  const handleDeleteProject = async(projectId) => {
+  const handleDeleteProject = async (projectId) => {
     if (!confirm('Are you sure you want to delete this project?'))
       return;
     try {
-    const res = await deleteProject(projectId);
-    if (res && res.success) {
-      alert('Project deleted successfully!');
-      setProjects(projects.filter(p => p.id !== projectId));
-    } else {
-      alert('Failed to delete project.');
+      const res = await deleteProject(projectId);
+      if (res && res.success) {
+        alert('Project deleted successfully!');
+        setProjects(projects.filter(p => p.id !== projectId));
+      } else {
+        alert('Failed to delete project.');
+      }
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      alert('An error occurred while deleting the project.');
     }
-  } catch (error) {
-    console.error('Error deleting project:', error);
-    alert('An error occurred while deleting the project.');
-  }
-     
   };
 
   const openQuotaModal = (project) => {
@@ -144,7 +142,7 @@ export default function ProjectManager() {
     setShowQuotaModal(true);
   };
 
-  const filteredProjects = projects.filter(p => 
+  const filteredProjects = projects.filter(p =>
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -158,7 +156,6 @@ export default function ProjectManager() {
 
   return (
     <div className="pm-wrapper">
-      
 
       {/* Actions Bar */}
       <div className="pm-toolbar">
@@ -167,14 +164,14 @@ export default function ProjectManager() {
           <input
             type="text"
             className="pm-search-input"
-            placeholder="Tìm kiếm project..."
+            placeholder="Search projects..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         <button onClick={() => setShowCreateModal(true)} className="pm-btn pm-btn-primary">
           <Plus size={20} />
-          Tạo Project
+          Create Project
         </button>
       </div>
 
@@ -222,7 +219,7 @@ export default function ProjectManager() {
                 />
               </div>
               <div className="pm-usage-text">
-                {((project.used / project.quota) * 100).toFixed(1)}% sử dụng
+                {((project.used / project.quota) * 100).toFixed(1)}% used
               </div>
             </div>
 
@@ -245,7 +242,7 @@ export default function ProjectManager() {
         <div className="pm-modal-backdrop">
           <div className="pm-modal-container">
             <div className="pm-modal-top">
-              <h2 className="pm-modal-title">Tạo Project Mới</h2>
+              <h2 className="pm-modal-title">Create New Project</h2>
               <button onClick={() => setShowCreateModal(false)} className="pm-close-button">
                 <X />
               </button>
@@ -253,23 +250,23 @@ export default function ProjectManager() {
 
             <div className="pm-modal-content">
               <div className="pm-input-group">
-                <label className="pm-input-label">Tên Project *</label>
+                <label className="pm-input-label">Project Name *</label>
                 <input
                   type="text"
                   className="pm-text-input"
                   value={newProject.name}
-                  onChange={(e) => setNewProject({...newProject, name: e.target.value})}
-                  placeholder="vd: Production-Main"
+                  onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
+                  placeholder="e.g. Production-Main"
                 />
               </div>
 
-               <div className="pm-input-group">
-                <label className="pm-input-label">Mô tả</label>
+              <div className="pm-input-group">
+                <label className="pm-input-label">Description</label>
                 <textarea
                   className="pm-textarea-input"
                   value={newProject.description}
-                  onChange={(e) => setNewProject({...newProject, description: e.target.value})}
-                  placeholder="Mô tả về project..."
+                  onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
+                  placeholder="Describe the project..."
                   rows={3}
                 />
               </div>
@@ -280,7 +277,7 @@ export default function ProjectManager() {
                   type="number"
                   className="pm-text-input"
                   value={newProject.quota}
-                  onChange={(e) => setNewProject({...newProject, quota: parseInt(e.target.value) || 0})}
+                  onChange={(e) => setNewProject({ ...newProject, quota: parseInt(e.target.value) || 0 })}
                   placeholder="100"
                   min="1"
                 />
@@ -289,14 +286,14 @@ export default function ProjectManager() {
 
             <div className="pm-modal-actions">
               <button onClick={() => setShowCreateModal(false)} className="pm-btn pm-btn-outline">
-                Hủy
+                Cancel
               </button>
               <button
                 onClick={handleCreateProject}
                 disabled={!newProject.name || !newProject.quota}
                 className="pm-btn pm-btn-primary"
               >
-                Tạo Project
+                Create Project
               </button>
             </div>
           </div>
@@ -308,7 +305,7 @@ export default function ProjectManager() {
         <div className="pm-modal-backdrop">
           <div className="pm-modal-container">
             <div className="pm-modal-top">
-              <h2 className="pm-modal-title">Cập nhật Quota</h2>
+              <h2 className="pm-modal-title">Update Quota</h2>
               <button onClick={() => setShowQuotaModal(false)} className="pm-close-button">
                 <X />
               </button>
@@ -316,7 +313,7 @@ export default function ProjectManager() {
 
             <div className="pm-info-box">
               <p className="pm-info-line">Project: <strong className="pm-info-value">{selectedProject.name}</strong></p>
-              <p className="pm-info-line">Đang sử dụng: <strong className="pm-info-value">{formatSize(selectedProject.used)}</strong></p>
+              <p className="pm-info-line">Used: <strong className="pm-info-value">{formatSize(selectedProject.used)}</strong></p>
             </div>
 
             <div className="pm-modal-content">
@@ -326,29 +323,29 @@ export default function ProjectManager() {
                   type="number"
                   className="pm-text-input"
                   value={quotaEdit.quota}
-                  onChange={(e) => setQuotaEdit({quota: parseInt(e.target.value) || 0})}
+                  onChange={(e) => setQuotaEdit({ quota: parseInt(e.target.value) || 0 })}
                   min="1"
                 />
-                <small className="pm-input-hint">Quota mới: {quotaEdit.quota} GB</small>
+                <small className="pm-input-hint">New quota: {quotaEdit.quota} GB</small>
               </div>
 
               {quotaEdit.quota * 1024 * 1024 * 1024 < selectedProject.used && (
                 <div className="pm-alert pm-alert-danger">
-                  <p className="pm-alert-text">⚠️ Quota mới nhỏ hơn dung lượng đang sử dụng!</p>
+                  <p className="pm-alert-text">⚠️ New quota is smaller than current usage!</p>
                 </div>
               )}
             </div>
 
             <div className="pm-modal-actions">
               <button onClick={() => setShowQuotaModal(false)} className="pm-btn pm-btn-outline">
-                Hủy
+                Cancel
               </button>
               <button
                 onClick={handleUpdateQuota}
                 disabled={!quotaEdit.quota}
                 className="pm-btn pm-btn-primary"
               >
-                Cập nhật
+                Update
               </button>
             </div>
           </div>

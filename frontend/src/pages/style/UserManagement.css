@@ -40,7 +40,7 @@
 .um-header-content {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
 }
 
 .um-header-icon {
@@ -83,8 +83,8 @@
 
 /* Create Button */
 .um-btn-create {
-    background-color: white;
-    color: #667eea;
+    background-color: #2563eb;
+    color: white;
     padding: 12px 24px;
     border: none;
     border-radius: 8px;

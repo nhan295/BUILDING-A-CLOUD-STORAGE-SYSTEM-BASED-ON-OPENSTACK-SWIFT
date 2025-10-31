@@ -288,28 +288,6 @@ export default function UserManagement() {
   if (isSuperAdmin) {
     return (
       <div className="um-container">
-        <div className="um-header-card">
-          <div className="um-header-content">
-            <div className="um-header-icon">
-              <Users className="um-icon-large" />
-            </div>
-            <div>
-              <h1 className="um-title">System User Management</h1>
-              <p className="um-subtitle">
-                Manage all users across the system
-                <span className="um-badge-sysadmin">System Admin</span>
-              </p>
-            </div>
-            <button
-              className="um-btn-create"
-              onClick={() => setShowCreateModal(true)}
-            >
-              <Plus className="um-icon" />
-              Create User
-            </button>
-          </div>
-        </div>
-
         <div className="um-search-card">
           <div className="um-search-wrapper">
             <Search className="um-search-icon" />
@@ -337,6 +315,14 @@ export default function UserManagement() {
               </option>
             ))}
           </select>
+
+          <button
+              className="um-btn-create"
+              onClick={() => setShowCreateModal(true)}
+            >
+              <Plus className="um-icon" />
+              Create User
+            </button>
         </div>
 
         <div className="um-table-card">
