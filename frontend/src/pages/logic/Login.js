@@ -2,36 +2,49 @@ import api from '../../../api'; // Adjust the import path as necessary
 
 //Validate user credentials
  
-export const handleLogin = async(username,password,project,domain) => {
- try{
-  if (!username.trim()) {
-    return { success: false, message: 'Please enter username' };
-  }
+export const handleLogin = async (username, password, project, domain) => {
+  try {
+    if (!username.trim()) {
+      return { success: false, message: 'Please enter username' };
+    }
 
-  if (!password) {
-    return { success: false, message: 'Please enter password' };
-  }
+    if (!password) {
+      return { success: false, message: 'Please enter password' };
+    }
 
-  if (!project) {
-    return { success: false, message: 'Please enter project' };
-  }
-    const response = await api.post('/api/auth/login', { username, password, project, domain });
+    if (!project) {
+      return { success: false, message: 'Please enter project' };
+    }
+
+    const response = await api.post('/api/auth/login', {
+      username,
+      password,
+      project,
+      domain,
+    });
 
     const data = response.data;
-    if(!response === 201){
-      return{
+
+    // kiểm tra response code
+    if (response.status !== 201 && response.status !== 200) {
+      return {
         success: false,
-        mesage: data.message || 'Login failed'
-      }
+        message: data.message || 'Login failed',
+      };
     }
-    if(data.data?.token){
-      localStorage.setItem('auth_token',data.data.token);
-      localStorage.setItem('user_info',JSON.stringify(data.data.user));
-      localStorage.setItem('project_info',JSON.stringify(data.data.project));
-      localStorage.setItem('roles',JSON.stringify(data.data.roles));
-      localStorage.setItem('available_projects', JSON.stringify(data.data.availableProjects));
-      
-      // Redirect dựa theo role
+
+    // lưu token + info
+    if (data.data?.token) {
+      localStorage.setItem('auth_token', data.data.token);
+      localStorage.setItem('user_info', JSON.stringify(data.data.user));
+      localStorage.setItem('project_info', JSON.stringify(data.data.project));
+      localStorage.setItem('roles', JSON.stringify(data.data.roles));
+      localStorage.setItem(
+        'available_projects',
+        JSON.stringify(data.data.availableProjects)
+      );
+
+      // redirect theo role
       const roles = data.data.roles || [];
       if (roles.includes('admin')) {
         window.location.href = '/dashboard';
@@ -39,21 +52,44 @@ export const handleLogin = async(username,password,project,domain) => {
         window.location.href = '/container-manager';
       }
     }
-    console.log('Login data:', data)
-    return{
+
+    console.log('Login data:', data);
+    return {
       success: true,
       message: data.message || 'Login successful',
-      data: data.data
-    }
- }catch(error){
-  console.error('Login error:', error);
-  return{
-    success: false,
-    message: `Error: ${error.message}`
-  }
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('Login error:', error);
 
- };
-}
+    // xử lý lỗi cụ thể
+    if (error.response) {
+      if (error.response.status === 401) {
+        return {
+          success: false,
+          message: 'Wrong username or password.',
+        };
+      } else if (error.response.status === 403) {
+        return {
+          success: false,
+          message: 'Access denied. Please check your project or domain.',
+        };
+      } else {
+        return {
+          success: false,
+          message:
+            error.response.data?.message || 'Login failed. Please try again.',
+        };
+      }
+    }
+
+    return {
+      success: false,
+      message: 'Unable to connect to server. Please try again later.',
+    };
+  }
+};
+
 
 //Validate token - check if token is still valid
  
