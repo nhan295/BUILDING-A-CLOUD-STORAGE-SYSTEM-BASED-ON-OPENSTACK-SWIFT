@@ -14,13 +14,13 @@ const getObject = async (req, res) => {
       });
     }
 
-    // 📦 Lấy danh sách object cơ bản
+    //  Lấy danh sách object cơ bản
     const listResponse = await axios.get(
       `${SWIFT_URL}/AUTH_${projectId}/${containerName}?format=json`,
       { headers: { "X-Auth-Token": token } }
     );
 
-    // ⚡ Duyệt qua từng object và gọi HEAD để lấy metadata
+    // Duyệt qua từng object và gọi HEAD để lấy metadata
     const objects = await Promise.all(
       listResponse.data.map(async (obj) => {
         const objectUrl = `${SWIFT_URL}/AUTH_${projectId}/${containerName}/${encodeURIComponent(
@@ -109,7 +109,7 @@ const newObject = async (req, res) => {
       }
     }
 
-    // 📤 Upload (overide or create a new one)
+    // Upload (overide or create a new one)
     const response = await axios.put(objectUrl, file.buffer, {
       headers: {
         "X-Auth-Token": token,
@@ -208,7 +208,7 @@ const downloadObject = async(req,res)=>{
     res.send(response.data);
 
   } catch (err) {
-    console.error('❌ Download object error:', err.response?.data || err.message);
+    console.error(' Download object error:', err.response?.data || err.message);
     res.status(err.response?.status || 500).json({
       success: false,
       message: 'Failed to download object',

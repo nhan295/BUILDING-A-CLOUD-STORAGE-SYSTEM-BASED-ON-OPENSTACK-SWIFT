@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Cloud, HardDrive, Upload, Users, BarChart3, Settings, Clock, FolderKanban } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import {
+  Cloud, HardDrive, Upload, Users, BarChart3, Settings, Clock, FolderKanban
+} from 'lucide-react';
 import { getStoredRoles, getStoredProjectInfo } from '../../pages/logic/Login';
 import '../../components/style/SideBar.css';
 
@@ -8,11 +11,12 @@ export default function SideBar() {
   const role = roles.includes('admin') ? 'admin' : 'member';
   const projectInfo = getStoredProjectInfo();
   const projectName = projectInfo?.name || 'Unknown Project';
-  
-  // Kiểm tra xem có phải super admin không (admin role + admin project)
+
   const isSuperAdmin = role === 'admin' && projectName.toLowerCase() === 'admin';
-  
-  // Lấy active link từ URL hoặc set mặc định
+
+  const navigate = useNavigate();
+
+  // Xác định active link ban đầu
   const [activeLink, setActiveLink] = useState(() => {
     const path = window.location.pathname;
     if (path === '/project-manager') return 'project-manager';
@@ -21,31 +25,21 @@ export default function SideBar() {
     if (path === '/dashboard') return 'dashboard';
     if (path === '/user-manager') return 'user-manager';
     if (path === '/activity-logs') return 'activity-logs';
-    
-    // Mặc định khi mới login
-    if (isSuperAdmin) return 'project-manager';
-    return role === 'admin' ? 'dashboard' : 'container-manager';
+    return isSuperAdmin ? 'project-manager' : role === 'admin' ? 'dashboard' : 'container-manager';
   });
 
-  // Cập nhật activeLink khi URL thay đổi
+  // Theo dõi thay đổi URL (trường hợp điều hướng bằng Link từ nơi khác)
   useEffect(() => {
-    const handleLocationChange = () => {
-      const path = window.location.pathname;
-      if (path === '/project-manager') setActiveLink('project-manager');
-      else if (path === '/container-manager') setActiveLink('container-manager');
-      else if (path === '/upload') setActiveLink('upload');
-      else if (path === '/dashboard') setActiveLink('dashboard');
-      else if (path === '/user-manager') setActiveLink('user-manager');
-      else if (path === '/activity-logs') setActiveLink('activity-logs');
+    const handlePop = () => {
+      setActiveLink(window.location.pathname.replace('/', '') || 'dashboard');
     };
-
-    window.addEventListener('popstate', handleLocationChange);
-    return () => window.removeEventListener('popstate', handleLocationChange);
+    window.addEventListener('popstate', handlePop);
+    return () => window.removeEventListener('popstate', handlePop);
   }, []);
 
   const handleLinkClick = (linkName, href) => {
     setActiveLink(linkName);
-    window.location.href = href;
+    navigate(href);
   };
 
   return (
@@ -63,105 +57,73 @@ export default function SideBar() {
       </div>
 
       <nav className="sidebar-nav">
-        {/* {sys admin UI} */}
         {isSuperAdmin ? (
           <>
             <div className="section-title">System Administration</div>
 
-            <a 
-              href="/dashboard" 
+            <button
               className={`nav-link ${activeLink === 'dashboard' ? 'active' : ''}`}
-              onClick={(e) => {
-                e.preventDefault();
-                handleLinkClick('dashboard', '/dashboard');
-              }}
+              onClick={() => handleLinkClick('dashboard', '/dashboard')}
             >
               <BarChart3 size={18} />
               <span>Dashboard</span>
-            </a>
-            
-            <a 
-              href="/project-manager" 
+            </button>
+
+            <button
               className={`nav-link ${activeLink === 'project-manager' ? 'active' : ''}`}
-              onClick={(e) => {
-                e.preventDefault();
-                handleLinkClick('project-manager', '/project-manager');
-              }}
+              onClick={() => handleLinkClick('project-manager', '/project-manager')}
             >
               <FolderKanban size={18} />
               <span>Projects</span>
-            </a>
+            </button>
 
-            
-            
-            <a 
-              href="/user-manager" 
+            <button
               className={`nav-link ${activeLink === 'user-manager' ? 'active' : ''}`}
-              onClick={(e) => {
-                e.preventDefault();
-                handleLinkClick('user-manager', '/user-manager');
-              }}
+              onClick={() => handleLinkClick('user-manager', '/user-manager')}
             >
               <Users size={18} />
               <span>User Management</span>
-            </a>
+            </button>
           </>
         ) : (
-          // {regular admin/member UI}
           <>
             <div className="section-title">Storage</div>
-            
-            <a 
-              href="/container-manager" 
+
+            <button
               className={`nav-link ${activeLink === 'container-manager' ? 'active' : ''}`}
-              onClick={(e) => {
-                e.preventDefault();
-                handleLinkClick('container-manager', '/container-manager');
-              }}
+              onClick={() => handleLinkClick('container-manager', '/container-manager')}
             >
               <HardDrive size={18} />
               <span>Containers</span>
-            </a>
+            </button>
 
             {role === 'admin' && (
               <>
                 <div className="section-title">Administration</div>
 
-                <a 
-                  href="/dashboard" 
+                <button
                   className={`nav-link ${activeLink === 'dashboard' ? 'active' : ''}`}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleLinkClick('dashboard', '/dashboard');
-                  }}
+                  onClick={() => handleLinkClick('dashboard', '/dashboard')}
                 >
                   <BarChart3 size={18} />
                   <span>Dashboard</span>
-                </a>
-                
-                <a 
-                  href="/user-manager" 
+                </button>
+
+                <button
                   className={`nav-link ${activeLink === 'user-manager' ? 'active' : ''}`}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleLinkClick('user-manager', '/user-manager');
-                  }}
+                  onClick={() => handleLinkClick('user-manager', '/user-manager')}
                 >
                   <Users size={18} />
                   <span>Users Management</span>
-                </a>
-                
-                <a 
-                  href="/activity-logs" 
+                </button>
+
+                <button
                   className={`nav-link ${activeLink === 'activity-logs' ? 'active' : ''}`}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleLinkClick('activity-logs', '/activity-logs');
-                  }}
+                  onClick={() => handleLinkClick('activity-logs', '/activity-logs')}
                 >
                   <Clock size={18} />
                   <span>Activity Log</span>
-                </a>
+                </button>
               </>
             )}
           </>
