@@ -54,6 +54,35 @@ export const deleteUser = async(userId)=>{
     }
 }
 
-export const assignUsertoProject = async()=>{
-
+export const assignUsertoProject = async(project_id, user_id,role_name)=>{
+    try{
+        const response = await api.post('/api/users/assign',{
+            project_id,
+            user_id,
+            role_name
+        })
+        if(response.data.success){
+            return{
+                success: true,
+                message: response.data.message
+            }
+        }
+    }catch(error){
+        console.error('Error while assign user to project', error);
+    }
 }
+
+export const removeUserfromProject = async(userId,projectId)=>{
+    try{
+        const response = await api.delete(`/api/users/remove/${projectId}/${userId}`);
+        if(response.data.success){
+            return{
+                success: true,
+                message: response.data.message
+            }
+        }
+    }catch(error){
+        console.error('Error while remove user from project', error);
+    }
+}
+

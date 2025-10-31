@@ -9,5 +9,5 @@ module.exports.setup = (app)=>{
     router.post('/create-user',validateToken,sysUserController.createUser);
     router.delete('/delete/:userId',validateToken,sysUserController.deleteUser);
     router.post('/assign',validateToken,sysUserController.assignUsertoProject);
-
+    router.delete('/remove/:projectId/:userId',validateToken,sysUserController.removeUserFromProject);
 }

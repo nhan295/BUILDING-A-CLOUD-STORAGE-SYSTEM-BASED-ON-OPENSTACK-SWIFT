@@ -189,10 +189,74 @@ const assignUsertoProject = async(req,res)=>{
     });
   }
 }
+
+const removeUserFromProject = async(req,res)=>{
+  try {
+    const { projectId, userId } = req.params;
+    const token = req.headers["x-auth-token"];
+
+    if (!projectId || !userId) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required parameters: projectId or userId.",
+      });
+    }
+
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: "Missing authentication token.",
+      });
+    }
+
+    console.log("=== DEBUG: Removing user from project ===");
+    console.log("Project ID:", projectId);
+    console.log("User ID:", userId);
+
+    const rolesRes = await axios.get(
+      `${KEYSTONE_URL}/projects/${projectId}/users/${userId}/roles`,
+      {
+        headers: { "X-Auth-Token": token },
+      }
+    );
+    // check if user has roles in the project
+    const roles = rolesRes.data.roles || [];
+    if (roles.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "User has no roles in this project.",
+      });
+    }
+
+    // Lặp qua từng role để xóa
+    for (const role of roles) {
+      await axios.delete(`${KEYSTONE_URL}/projects/${projectId}/users/${userId}/roles/${role.id}`,
+        {
+          headers: { "X-Auth-Token": token },
+        }
+      );
+      console.log(`Removed role ${role.name} (${role.id})`);
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Removed user ${userId} from project ${projectId}`,
+    });
+  } catch (error) {
+    console.error("Error removing user from project:", error.response?.data || error.message);
+    const status = error.response?.status || 500;
+    return res.status(status).json({
+      success: false,
+      message: error.response?.data?.error?.message || "Failed to remove user from project.",
+    });
+  }
+}
+
 module.exports = {
     getUsers,
     createUser,
     deleteUser,
-    assignUsertoProject
+    assignUsertoProject,
+    removeUserFromProject
 }
 
