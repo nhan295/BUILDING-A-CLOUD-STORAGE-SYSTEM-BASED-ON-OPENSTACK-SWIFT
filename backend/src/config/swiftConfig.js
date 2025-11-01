@@ -6,6 +6,8 @@ module.exports = {
   KEYSTONR_VERSION: 'v3' , 
 
   //openstack swift
-  SWIFT_URL: process.env.SWIFT_URL
+  SWIFT_URL: process.env.SWIFT_URL,
+
+  ADMIN_TOKEN: process.env.ADMIN_TOKEN
 
 };

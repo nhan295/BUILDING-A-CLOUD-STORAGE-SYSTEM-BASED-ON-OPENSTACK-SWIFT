@@ -9,6 +9,7 @@ const objectRoutes = require('./routes/objectRoutes');
 const accountRoutes = require('./routes/accountRoutes');
 const sysProjectRoutes = require('./routes/sysProjectRoutes');
 const sysUserRoutes = require('./routes/sysUserRoutes');
+const activityLogger = require('./routes/activityLoggerRoutes');
 
 const app = express();
 app.use(
@@ -27,7 +28,7 @@ objectRoutes.setup(app);
 accountRoutes.setup(app);
 sysProjectRoutes.setup(app);
 sysUserRoutes.setup(app);
-
+activityLogger.setup(app);
 
 app.use((req,res,next)=>{
     console.log(`${req.method} ${req.path}`);

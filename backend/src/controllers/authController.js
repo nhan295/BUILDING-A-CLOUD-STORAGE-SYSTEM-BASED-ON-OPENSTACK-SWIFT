@@ -247,9 +247,11 @@ const getUserInfo = async (req, res) => {
   }
 };
 
+
+
 module.exports = {
   login,
   logout,
   getProjects,
-  getUserInfo
+  getUserInfo,
 }

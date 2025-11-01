@@ -1,4 +1,5 @@
 const { SWIFT_URL } = require('../config/swiftConfig');
+const { logActivity } = require("./activityLogger.js");
 const axios = require('axios');
 const JSZip = require('jszip');
 const fs = require('fs');
@@ -85,6 +86,8 @@ const delContainer = async (req, res) => {
       headers: { "X-Auth-Token": token },
     });
 
+     const username = req.user?.username || req.project?.username || 'unknown';
+    logActivity(username, "Delete", `Deleted container${containerName}`);
     return res.status(200).json({
       success: true,
       message:
@@ -139,6 +142,8 @@ const createContainer = async (req, res) => {
       }
     );
 
+    const username = req.user?.username || req.project?.username || 'unknown';
+    logActivity(username, "Create", `Created container ${container}`);
     const status = response.status === 201 ? 'created' : 'already exists';
 
     return res.status(200).json({

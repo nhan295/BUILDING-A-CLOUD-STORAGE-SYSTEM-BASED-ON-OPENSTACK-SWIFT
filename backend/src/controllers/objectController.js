@@ -1,5 +1,6 @@
 const { SWIFT_URL } = require('../config/swiftConfig');
 const axios = require('axios');
+const { logActivity } = require("./activityLogger.js");
 
 const getObject = async (req, res) => {
   try {
@@ -118,6 +119,8 @@ const newObject = async (req, res) => {
         "X-Object-Meta-Upload-Time": new Date().toISOString(),
       },
     });
+     const username = req.user?.username || req.project?.username || 'unknown';
+    logActivity(username, "Upload", `File ${objectName} upload to ${containerName}`);
 
     return res.status(201).json({
       success: true,
@@ -160,6 +163,8 @@ const delObject = async (req, res) => {
     await axios.delete(url, {
       headers: { 'X-Auth-Token': token },
     });
+    const username = req.user?.username || req.project?.username || 'unknown';
+    logActivity(username, "Delete", `File ${objectName} delete from ${containerName}`);
 
     return res.status(200).json({
       success: true,

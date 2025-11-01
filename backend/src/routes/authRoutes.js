@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
+const validateToken = require('../middleware/validateToken');
 
 
 module.exports.setup = (app) => {

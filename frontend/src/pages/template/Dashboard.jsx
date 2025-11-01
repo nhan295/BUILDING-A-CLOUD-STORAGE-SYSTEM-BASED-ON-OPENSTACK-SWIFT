@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Container, Upload, HardDrive, Users, TrendingUp, Activity, Database, FileText, Folder, FolderKanban, Server } from 'lucide-react';
 import '../style/Dashboard.css';
 import { getStoredRoles, getStoredProjectInfo } from '../../pages/logic/Login';
-import { totalContainer, totalProjectUser, projectSize, getSysProjects } from '../../pages/logic/Dashboard';
+import { totalContainer, totalProjectUser, projectSize, getSysProjects,activityLogger } from '../../pages/logic/Dashboard';
 
 export default function SwiftDashboard() {
   const [stats, setStats] = useState({
@@ -33,81 +33,93 @@ export default function SwiftDashboard() {
   const [recentActivities, setRecentActivities] = useState([]);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        if (isSuperAdmin) {
-          const sysData = await getSysProjects();
-          const projects = Array.isArray(sysData?.projects) ? sysData.projects : [];
+  const fetchData = async () => {
+    try {
+      if (isSuperAdmin) {
+        const sysData = await getSysProjects();
+        const projects = Array.isArray(sysData?.projects) ? sysData.projects : [];
 
-          const totalProjects = typeof sysData?.total === 'number' ? sysData.total : projects.length;
-          const totalUsers = projects.reduce((sum, p) => sum + (Number(p.user_count) || 0), 0);
-          const totalUsedBytes = projects.reduce((sum, p) => sum + (Number(p.swift_quota?.bytes_used) || 0), 0);
+        const totalProjects = typeof sysData?.total === 'number' ? sysData.total : projects.length;
+        const totalUsers = projects.reduce((sum, p) => sum + (Number(p.user_count) || 0), 0);
+        const totalUsedBytes = projects.reduce((sum, p) => sum + (Number(p.swift_quota?.bytes_used) || 0), 0);
 
-          setSystemStats(prev => ({
-            ...prev,
-            totalProjects,
-            totalUsers,
-            usedStorage: totalUsedBytes,
-            totalStorage: 50 * 1024 * 1024 * 1024 // assume 50GB total
+        setSystemStats(prev => ({
+          ...prev,
+          totalProjects,
+          totalUsers,
+          usedStorage: totalUsedBytes,
+          totalStorage: 50 * 1024 * 1024 * 1024 // assume 50GB total
+        }));
+
+        if (projects.length > 0) {
+          const formatted = projects.map((p) => ({
+            id: p.id,
+            name: p.name,
+            storage: Number(p.swift_quota?.bytes_used) || 0,
+            containers: p.swift_quota?.container_count || 0,
+            users: p.user_count || 0,
+            quota:
+              p.swift_quota?.quota_bytes === 'unlimited'
+                ? Infinity
+                : Number(p.swift_quota?.quota_bytes || 0),
           }));
 
-          if (projects.length > 0) {
-            const formatted = projects.map((p) => ({
-              id: p.id,
-              name: p.name,
-              storage: Number(p.swift_quota?.bytes_used) || 0,
-              containers: p.swift_quota?.container_count || 0,
-              users: p.user_count || 0,
-              quota:
-                p.swift_quota?.quota_bytes === 'unlimited'
-                  ? Infinity
-                  : Number(p.swift_quota?.quota_bytes || 0),
-            }));
-
-            const top = formatted.sort((a, b) => b.storage - a.storage).slice(0, 5);
-            setTopProjects(top);
-          } else {
-            setTopProjects([]);
-          }
-
-          setRecentActivities([
-            { id: 1, type: 'create', user: 'System', file: 'Project "Marketing" created', time: '10 minutes ago', size: '-' },
-            { id: 2, type: 'upload', user: 'project-dev', file: 'Large dataset uploaded', time: '25 minutes ago', size: '15.2 GB' },
-            { id: 3, type: 'create', user: 'admin@company.com', file: 'New user registered', time: '1 hour ago', size: '-' },
-            { id: 4, type: 'delete', user: 'project-old', file: 'Project "Test2023" deleted', time: '2 hours ago', size: '-' },
-            { id: 5, type: 'upload', user: 'project-backup', file: 'System backup completed', time: '3 hours ago', size: '42.8 GB' }
-          ]);
+          const top = formatted.sort((a, b) => b.storage - a.storage).slice(0, 5);
+          setTopProjects(top);
         } else {
-          const containersData = await totalContainer();
-          const totalContainers = containersData.length;
-          const totalObjects = containersData.reduce((sum, c) => sum + (c.objects || c.count || 0), 0);
-          const totalBytes = containersData.reduce((sum, c) => sum + (c.bytes || 0), 0);
-          const totalUsers = await totalProjectUser();
-          const { quota_bytes } = await projectSize();
-
-          setStats({
-            totalStorage: quota_bytes,
-            usedStorage: totalBytes,
-            containers: totalContainers,
-            objects: totalObjects,
-            users: totalUsers
-          });
-
-          setRecentActivities([
-            { id: 1, type: 'upload', user: 'admin@project.com', file: 'backup-2025.tar.gz', time: '5 minutes ago', size: '2.4 GB' },
-            { id: 2, type: 'delete', user: 'user1@project.com', file: 'old-logs.zip', time: '12 minutes ago', size: '856 MB' },
-            { id: 3, type: 'download', user: 'dev@project.com', file: 'database-dump.sql', time: '28 minutes ago', size: '1.2 GB' },
-            { id: 4, type: 'upload', user: 'admin@project.com', file: 'images-archive.zip', time: '1 hour ago', size: '3.8 GB' },
-            { id: 5, type: 'create', user: 'user2@project.com', file: 'new-container', time: '2 hours ago', size: '-' }
-          ]);
+          setTopProjects([]);
         }
-      } catch (error) {
-        console.error("Error while fetching dashboard data:", error);
-      }
-    };
 
-    fetchData();
-  }, [isSuperAdmin]);
+        // 🔥 Lấy recent activities thật từ backend
+        const logs = await activityLogger();
+        setRecentActivities(
+          logs.map((log, index) => ({
+            id: index + 1,
+            type: mapActionToType(log.action),
+            user: log.username,
+            file: log.details,
+            time: new Date(log.time).toLocaleString(),
+            size: '-', // không có size trong log
+          }))
+        );
+
+      } else {
+        const containersData = await totalContainer();
+        const totalContainers = containersData.length;
+        const totalObjects = containersData.reduce((sum, c) => sum + (c.objects || c.count || 0), 0);
+        const totalBytes = containersData.reduce((sum, c) => sum + (c.bytes || 0), 0);
+        const totalUsers = await totalProjectUser();
+        const { quota_bytes } = await projectSize();
+
+        setStats({
+          totalStorage: quota_bytes,
+          usedStorage: totalBytes,
+          containers: totalContainers,
+          objects: totalObjects,
+          users: totalUsers
+        });
+
+        // 🔥 Lấy activity thật cho project member/admin
+        const logs = await activityLogger();
+        setRecentActivities(
+          logs.map((log, index) => ({
+            id: index + 1,
+            type: mapActionToType(log.action),
+            user: log.username,
+            file: log.details,
+            time: new Date(log.time).toLocaleString(),
+            size: '-',
+          }))
+        );
+      }
+    } catch (error) {
+      console.error("Error while fetching dashboard data:", error);
+    }
+  };
+
+  fetchData();
+}, [isSuperAdmin]);
+
 
   const formatSize = (bytes) => {
     if (!bytes) return '0 B';
@@ -116,6 +128,16 @@ export default function SwiftDashboard() {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return (bytes / Math.pow(k, i)).toFixed(2) + ' ' + sizes[i];
   };
+
+  const mapActionToType = (action) => {
+  const a = action.toLowerCase();
+  if (a.includes('upload')) return 'upload';
+  if (a.includes('download')) return 'download';
+  if (a.includes('delete')) return 'delete';
+  if (a.includes('create')) return 'create';
+  return 'other';
+};
+
 
   const getActivityIcon = (type) => {
     switch (type) {
