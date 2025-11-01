@@ -9,6 +9,7 @@ import {
   X,
   Key,
   User,
+  Shuffle
 } from "lucide-react";
 import {
   getUsers,
@@ -40,6 +41,31 @@ export default function UserManagement() {
   const role = roles.includes("admin") ? "admin" : "member";
   const projectInfo = getStoredProjectInfo();
   const projectName = projectInfo?.name || "Unknown Project";
+
+  const generatePassword = () => {
+  const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const lowercase = 'abcdefghijklmnopqrstuvwxyz';
+  const numbers = '0123456789';
+  const special = '!@#$%^&*';
+  
+  let password = '';
+  password += uppercase[Math.floor(Math.random() * uppercase.length)];
+  password += lowercase[Math.floor(Math.random() * lowercase.length)];
+  password += numbers[Math.floor(Math.random() * numbers.length)];
+  password += special[Math.floor(Math.random() * special.length)];
+  
+  const allChars = uppercase + lowercase + numbers + special;
+  for (let i = 0; i < 4; i++) {
+    password += allChars[Math.floor(Math.random() * allChars.length)];
+  }
+  
+  return password.split('').sort(() => Math.random() - 0.5).join('');
+};
+
+const handleGeneratePassword = () => {
+  const newPassword = generatePassword();
+  setNewUser({ ...newUser, password: newPassword });
+};
 
   const isSuperAdmin =
     role === "admin" && projectName.toLowerCase() === "admin";
@@ -450,20 +476,31 @@ export default function UserManagement() {
                   </div>
                 </div>
                 <div className="um-form-group">
-                  <label>Password</label>
-                  <div className="um-input-with-icon">
-                    <Key className="um-input-icon" size={18} />
-                    <input
-                      type="password"
-                      value={newUser.password}
-                      onChange={(e) =>
-                        setNewUser({ ...newUser, password: e.target.value })
-                      }
-                      placeholder="Enter password"
-                      className="um-form-input um-with-icon"
-                    />
-                  </div>
-                </div>
+  <label>Password</label>
+  <div className="um-input-with-icon">
+    <Key className="um-input-icon" size={18} />
+    <input
+      type="text"
+      value={newUser.password}
+      onChange={(e) =>
+        setNewUser({ ...newUser, password: e.target.value })
+      }
+      placeholder="Enter password"
+      className="um-form-input um-with-icon um-with-generate"
+    />
+    <button
+      type="button"
+      className="um-btn-generate"
+      onClick={handleGeneratePassword}
+      title="Generate random password"
+    >
+      <Shuffle size={18} />
+    </button>
+  </div>
+  <small className="um-password-hint">
+    Click <Shuffle size={12} className="um-inline-icon" /> to generate a secure password
+  </small>
+</div>
                 <div className="um-modal-actions">
                   <button
                     type="button"
