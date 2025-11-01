@@ -279,6 +279,7 @@
   transition: all 0.2s ease;
   text-align: left;
   position: relative;
+  text-decoration: none;
 }
 
 .dropdown-item:hover {

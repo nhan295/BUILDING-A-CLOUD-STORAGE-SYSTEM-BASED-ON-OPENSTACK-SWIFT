@@ -4,8 +4,6 @@ import {
   User,
   Settings,
   LogOut,
-  Bell,
-  HelpCircle,
   ChevronDown,
 } from "lucide-react";
 import "../../components/style/Header.css";

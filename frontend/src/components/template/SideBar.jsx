@@ -116,14 +116,6 @@ export default function SideBar() {
                   <Users size={18} />
                   <span>Users Management</span>
                 </button>
-
-                <button
-                  className={`nav-link ${activeLink === 'activity-logs' ? 'active' : ''}`}
-                  onClick={() => handleLinkClick('activity-logs', '/activity-logs')}
-                >
-                  <Clock size={18} />
-                  <span>Activity Log</span>
-                </button>
               </>
             )}
           </>

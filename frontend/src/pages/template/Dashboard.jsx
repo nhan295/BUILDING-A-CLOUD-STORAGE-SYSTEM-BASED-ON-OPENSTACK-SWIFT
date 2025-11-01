@@ -261,29 +261,6 @@ export default function SwiftDashboard() {
             </div>
           </div>
         </div>
-
-        {/* Super Admin Quick Actions */}
-        <div className="quick-actions">
-          <h2>System Administration</h2>
-          <div className="actions-grid">
-            <button className="action-button" onClick={() => window.location.href = '/projects'}>
-              <FolderKanban className="action-icon" />
-              <span>Manage Projects</span>
-            </button>
-            <button className="action-button" onClick={() => window.location.href = '/user-manager'}>
-              <Users className="action-icon" />
-              <span>Manage Users</span>
-            </button>
-            <button className="action-button">
-              <Database className="action-icon" />
-              <span>System Storage</span>
-            </button>
-            <button className="action-button">
-              <Activity className="action-icon" />
-              <span>System Logs</span>
-            </button>
-          </div>
-        </div>
       </div>
     );
   }
@@ -368,30 +345,7 @@ export default function SwiftDashboard() {
                 </div>
               </div>
             </div>
-          </div>
-
-          {/* Quick Actions */}
-          <div className="quick-actions">
-            <h2>Quick Actions</h2>
-            <div className="actions-grid">
-              <button className="action-button">
-                <Upload className="action-icon" />
-                <span>Upload File</span>
-              </button>
-              <button className="action-button">
-                <Container className="action-icon" />
-                <span>Create Container</span>
-              </button>
-              <button className="action-button">
-                <Users className="action-icon" />
-                <span>Manage Users</span>
-              </button>
-              <button className="action-button">
-                <Activity className="action-icon" />
-                <span>View Logs</span>
-              </button>
-            </div>
-          </div>
+          </div>          
         </div>
       )}
     </div>
