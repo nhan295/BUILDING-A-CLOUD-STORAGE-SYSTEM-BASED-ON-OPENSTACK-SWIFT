@@ -504,7 +504,7 @@ export default function UserManagement() {
                 <div className="um-form-group">
                   <label>User</label>
                   <div className="um-user-display">
-                    <Mail size={16} /> {selectedUser.username}
+                    <User size={16} /> {selectedUser.username}
                   </div>
                 </div>
 
@@ -619,7 +619,7 @@ export default function UserManagement() {
                   </td>
                   <td>
                     <div className="um-user-info">
-                      <Mail className="um-user-icon" size={16} />
+                      <User className="um-user-icon" size={16} />
                       <span className="um-username">{user.username}</span>
                     </div>
                   </td>
