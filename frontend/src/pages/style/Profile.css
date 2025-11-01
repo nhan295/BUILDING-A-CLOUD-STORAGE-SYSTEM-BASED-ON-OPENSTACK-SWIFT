@@ -1,0 +1,223 @@
+
+.pf-container {
+  min-height: 100vh;
+  padding: 2rem 1rem;
+}
+
+.pf-card {
+  max-width: 800px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.pf-header {
+  background: #2563eb;
+  color: white;
+  padding: 1.5rem;
+}
+
+.pf-header h1 {
+  font-size: 1.75rem;
+  font-weight: 600;
+}
+
+.pf-content {
+  padding: 2rem;
+}
+
+.pf-info-section {
+  margin-bottom: 2rem;
+}
+
+.pf-info-item {
+  padding: 1rem 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.pf-info-item:last-child {
+  border-bottom: none;
+}
+
+.pf-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #6b7280;
+  margin-bottom: 0.25rem;
+}
+
+.pf-value {
+  color: #111827;
+  font-size: 1rem;
+}
+
+.pf-password-section {
+  border-top: 1px solid #e5e7eb;
+  padding-top: 2rem;
+  text-align: center;
+}
+
+.pf-password-section h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 1rem;
+}
+
+.pf-password-section p {
+  color: #6b7280;
+  margin-bottom: 1.5rem;
+}
+
+.pf-form-group {
+  margin-bottom: 1.25rem;
+  text-align: left;
+}
+
+.pf-form-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+.pf-input-wrapper {
+  position: relative;
+}
+
+.pf-input {
+  width: 100%;
+  padding: 0.625rem 2.5rem 0.625rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 1rem;
+  transition: all 0.2s;
+}
+
+.pf-input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.pf-toggle-password {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+
+.pf-toggle-password:hover {
+  color: #374151;
+}
+
+.pf-toggle-password svg {
+  width: 20px;
+  height: 20px;
+}
+
+.pf-message {
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+}
+
+.pf-message-success {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.pf-message-error {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.pf-button {
+  padding: 0.75rem 2rem;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.pf-button:hover {
+  background: #1d4ed8;
+}
+
+.pf-button:active {
+  transform: scale(0.98);
+}
+
+.pf-button-secondary {
+  background: #6b7280;
+  margin-left: 0.5rem;
+}
+
+.pf-button-secondary:hover {
+  background: #4b5563;
+}
+
+.pf-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.pf-modal {
+  background: white;
+  border-radius: 8px;
+  max-width: 500px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.pf-modal-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.pf-modal-header h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.pf-modal-body {
+  padding: 1.5rem;
+}
+
+.pf-modal-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}

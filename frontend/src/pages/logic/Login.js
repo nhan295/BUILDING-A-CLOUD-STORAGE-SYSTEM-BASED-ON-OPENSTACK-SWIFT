@@ -25,7 +25,6 @@ export const handleLogin = async (username, password, project, domain) => {
 
     const data = response.data;
 
-    // kiểm tra response code
     if (response.status !== 201 && response.status !== 200) {
       return {
         success: false,
@@ -33,8 +32,16 @@ export const handleLogin = async (username, password, project, domain) => {
       };
     }
 
-    // lưu token + info
     if (data.data?.token) {
+      // 🔹 Lưu last login
+      const currentTime = new Date().toISOString();
+      const previousLogin = localStorage.getItem('last_login');
+      if (previousLogin) {
+        localStorage.setItem('previous_login', previousLogin);
+      }
+      localStorage.setItem('last_login', currentTime);
+
+      // 🔹 Lưu thông tin đăng nhập
       localStorage.setItem('auth_token', data.data.token);
       localStorage.setItem('user_info', JSON.stringify(data.data.user));
       localStorage.setItem('project_info', JSON.stringify(data.data.project));
@@ -44,7 +51,7 @@ export const handleLogin = async (username, password, project, domain) => {
         JSON.stringify(data.data.availableProjects)
       );
 
-      // redirect theo role
+      // 🔹 Chuyển hướng theo role
       const roles = data.data.roles || [];
       if (roles.includes('admin')) {
         window.location.href = '/dashboard';
@@ -62,13 +69,9 @@ export const handleLogin = async (username, password, project, domain) => {
   } catch (error) {
     console.error('Login error:', error);
 
-    // xử lý lỗi cụ thể
     if (error.response) {
       if (error.response.status === 401) {
-        return {
-          success: false,
-          message: 'Wrong username or password.',
-        };
+        return { success: false, message: 'Wrong username or password.' };
       } else if (error.response.status === 403) {
         return {
           success: false,
@@ -91,41 +94,10 @@ export const handleLogin = async (username, password, project, domain) => {
 };
 
 
+
 //Validate token - check if token is still valid
  
-export const validateToken = async () => {
-  try {
-    const token = localStorage.getItem('auth_token');
 
-    if (!token) {
-      return { success: false, valid: false };
-    }
-
-    const response = await api.get('/api/auth/validate', {
-      method: 'GET',
-      headers: {
-        'X-Auth-Token': token
-      }
-    });
-
-    if (!response.ok) {
-      clearAuthStorage();
-      return { success: false, valid: false };
-    }
-
-    const data = await response.data;
-    return {
-      success: true,
-      valid: data.data?.valid || true,
-      data: data.data
-    };
-
-  } catch (error) {
-    console.error('Validate token error:', error);
-    clearAuthStorage();
-    return { success: false, valid: false };
-  }
-};
 
 // Get user info - get user info from token
 
@@ -207,19 +179,10 @@ export const getAvailableProjects = () =>{
 export const getAvailableDomains = () => {
   return ['Default'];
 };
-//Clear all auth data from localStorage
- 
-const clearAuthStorage = () => {
-  localStorage.removeItem('auth_token');
-  localStorage.removeItem('user_info');
-  localStorage.removeItem('project_info');
-  localStorage.removeItem('roles');
-  localStorage.removeItem('available_projects');
-};
+
 
 export default {
   handleLogin,
-  validateToken,
   getUserInfo,
   isLoggedIn,
   getStoredUserInfo,
