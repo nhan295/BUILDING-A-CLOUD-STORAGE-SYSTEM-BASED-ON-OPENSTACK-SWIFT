@@ -8,6 +8,7 @@ import ContainerManagement from './pages/template/ContainerManagement.jsx'
 import ProjectManagement from './pages/template/ProjectManagement.jsx'
 import ObjectManagement from './pages/template/ObjectManagement.jsx'
 import Profile from './pages/template/Profile.jsx'
+import ActivityLogs from './pages/template/ActivityLogs.jsx'
 function App() {
 
   return (
@@ -22,6 +23,7 @@ function App() {
         <Route path="/project-manager" element={<ProjectManagement/>}/>
         <Route path="/container/:containerName" element={<ObjectManagement/>}/>
         <Route path="/profile" element={<Profile/>}/>
+        <Route path="activity-logs" element={<ActivityLogs/>}/>
       </Route>
 
       

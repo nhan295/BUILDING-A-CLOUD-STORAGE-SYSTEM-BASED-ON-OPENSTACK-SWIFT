@@ -1,0 +1,245 @@
+/* ActivityLogs.css - Prefix: al- */
+
+.al-container {
+  width: 100%;
+  padding: 20px;
+}
+
+.al-card {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.al-header {
+  padding: 24px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.al-header h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.al-filter-section {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.al-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f9fafb;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.al-filter-icon {
+  color: #6b7280;
+}
+
+.al-filter-select {
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  color: #374151;
+  cursor: pointer;
+  outline: none;
+  padding: 4px 8px;
+  font-weight: 500;
+}
+
+.al-filter-select:hover {
+  color: #111827;
+}
+
+.al-body {
+  padding: 24px;
+}
+
+.al-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.al-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s ease;
+}
+
+.al-item:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.al-icon-wrapper {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.al-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.al-icon-upload {
+  color: #10b981;
+}
+
+.al-icon-download {
+  color: #3b82f6;
+}
+
+.al-icon-delete {
+  color: #ef4444;
+}
+
+.al-icon-create {
+  color: #f59e0b;
+}
+
+.al-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.al-file {
+  margin: 0 0 4px 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1f2937;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.al-user {
+  margin: 0;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.al-meta {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.al-size {
+  margin: 0 0 4px 0;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.al-time {
+  margin: 0;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.al-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: #9ca3af;
+}
+
+.al-empty svg {
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.al-empty p {
+  margin: 0;
+  font-size: 16px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .al-container {
+    padding: 12px;
+  }
+
+  .al-header {
+    padding: 16px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .al-filter-section {
+    width: 100%;
+  }
+
+  .al-filter-group {
+    flex: 1;
+    min-width: 140px;
+  }
+
+  .al-body {
+    padding: 16px;
+  }
+
+  .al-item {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .al-meta {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    text-align: left;
+  }
+
+  .al-size,
+  .al-time {
+    display: inline-block;
+  }
+}
+
+@media (max-width: 480px) {
+  .al-header h2 {
+    font-size: 20px;
+  }
+
+  .al-filter-group {
+    width: 100%;
+  }
+
+  .al-icon-wrapper {
+    width: 36px;
+    height: 36px;
+  }
+
+  .al-icon {
+    width: 18px;
+    height: 18px;
+  }
+}

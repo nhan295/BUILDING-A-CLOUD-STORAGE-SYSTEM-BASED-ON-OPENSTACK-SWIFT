@@ -32,10 +32,6 @@ export default function Profile() {
   return (
     <div className="pf-container">
       <div className="pf-card">
-        <div className="pf-header">
-          <h1>Thông Tin Người Dùng</h1>
-        </div>
-
         <div className="pf-content">
           <div className="pf-info-section">
             {infoFields.map(field => (
