@@ -62,11 +62,3 @@ export const activityLogger = async()=>{
         console.error("Failed to fetch recent activities:", error.message);
     }
 }
-
-export default {
-    totalContainer,
-    totalObject,
-    totalProjectUser,
-    projectSize,
-    getSysProjects
-}

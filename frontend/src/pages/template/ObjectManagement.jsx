@@ -49,21 +49,21 @@ export default function ObjectManagement() {
       const response = await uploadFile(containerName, file, setUploadProgress);
 
       if (response.success) {
-        alert('✅ File uploaded successfully!');
+        alert('File uploaded successfully!');
         setIsUploading(false);
         setUploadProgress(0);
       } else {
         if (response.message?.includes('already exists')) {
           const confirmReplace = window.confirm(
-            `⚠️ File "${file.name}" already exists in "${containerName}".\nDo you want to overwrite it?`
+            `File "${file.name}" already exists in "${containerName}".\nDo you want to overwrite it?`
           );
           if (confirmReplace) {
             setUploadProgress(0);
             const replaceRes = await uploadFile(containerName, file, setUploadProgress, true);
             if (replaceRes.success) {
-              alert('✅ File overwritten successfully!');
+              alert('File overwritten successfully!');
             } else {
-              alert('❌ Overwrite failed: ' + replaceRes.message);
+              alert('Overwrite failed: ' + replaceRes.message);
             }
           }
           setIsUploading(false);

@@ -14,7 +14,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
-
   // Domains
   const availableDomains = getAvailableDomains();
 
@@ -113,7 +112,7 @@ export default function LoginPage() {
                   type="text"
                   value={username}
                   onChange={(e) => handleUsernameChange(e.target.value)}
-                  placeholder="Nhập username"
+                  placeholder="Enter username"
                   className="form-input"
                 />
               </div>
@@ -128,7 +127,7 @@ export default function LoginPage() {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => handlePasswordChange(e.target.value)}
-                  placeholder="Nhập password"
+                  placeholder="Enter password"
                   className="form-input form-input-password"
                 />
                 <button
@@ -149,7 +148,7 @@ export default function LoginPage() {
                   type="text"
                   value={project}
                   onChange={(e) => handleProjectChange(e.target.value)}
-                  placeholder="Nhập tên project"
+                  placeholder="Enter project name"
                   className="form-input"
                 />
               </div>
@@ -171,7 +170,7 @@ export default function LoginPage() {
                   ></path>
                 </svg>
               )}
-              {loading ? 'Đang xác thực...' : 'Đăng Nhập'}
+              {loading ? 'Authenticating...' : 'Login'}
             </button>
           </div>
         </div>

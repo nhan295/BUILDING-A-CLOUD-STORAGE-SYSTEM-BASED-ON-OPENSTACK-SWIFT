@@ -8,6 +8,4 @@ module.exports = {
   //openstack swift
   SWIFT_URL: process.env.SWIFT_URL,
 
-  ADMIN_TOKEN: process.env.ADMIN_TOKEN
-
 };

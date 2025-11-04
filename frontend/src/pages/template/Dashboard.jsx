@@ -124,7 +124,7 @@ export default function SwiftDashboard() {
             users: totalUsers,
           });
 
-          // 🔥 Lấy activity thật cho project member/admin
+          //  Lấy activity thật cho project member/admin
           const logs = await activityLogger();
         
         const formattedLogs = logs

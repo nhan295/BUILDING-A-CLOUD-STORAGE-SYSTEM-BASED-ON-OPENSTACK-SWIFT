@@ -5,21 +5,21 @@ const getProject = async (req, res) => {
   try {
     const token = req.headers['x-auth-token'];
 
-    // 1️⃣ Lấy danh sách project
+    // Lấy danh sách project
     const projectRes = await axios.get(`${KEYSTONE_URL}/projects`, {
       headers: { 'X-Auth-Token': token },
     });
 
     const projects = projectRes.data.projects;
 
-    // 2️⃣ Lặp từng project để thêm quota + user count
+    // Lặp từng project để thêm quota + user count
     const projectsWithQuota = await Promise.all(
       projects.map(async (project) => {
         const debug = { projectId: project.id, projectName: project.name, attempts: [] };
         let userCount = 0;
 
         try {
-          // 🧩 Gọi Keystone API để đếm user trong project
+          // Gọi Keystone API để đếm user trong project
           const userRes = await axios.get(
             `${KEYSTONE_URL}/role_assignments?scope.project.id=${project.id}&include_names=True`,
             { headers: { 'X-Auth-Token': token } }
@@ -39,7 +39,7 @@ const getProject = async (req, res) => {
           debug.userCountError = err.message;
         }
 
-        // 3️⃣ Lấy quota của project trong Swift
+        // Lấy quota của project trong Swift
         try {
           const swiftGet = await axios.get(`${SWIFT_URL}/AUTH_${project.id}`, {
             headers: { 'X-Auth-Token': token },
@@ -132,7 +132,7 @@ const createProject = async (req, res) => {
     const token = req.headers['x-auth-token'];
     const { projectName, description, quota_bytes } = req.body;
 
-    // 🧩 Kiểm tra dữ liệu đầu vào
+    // Kiểm tra dữ liệu đầu vào
     if (!projectName) {
       return res.status(400).json({ success: false, message: 'Missing project name' });
     }
@@ -144,7 +144,7 @@ const createProject = async (req, res) => {
       });
     }
 
-    // 🪄 1️⃣ Tạo project trong Keystone
+    // Tạo project trong Keystone
     const payload = {
       project: {
         name: projectName,
@@ -164,9 +164,9 @@ const createProject = async (req, res) => {
     const project = createRes.data.project;
     const projectId = project.id;
 
-    console.log(`✅ Created project: ${projectName} (${projectId})`);
+    console.log(`Created project: ${projectName} (${projectId})`);
 
-    // 🪄 2️⃣ Nếu có quota_bytes => set quota trong Swift
+    // Nếu có quota_bytes => set quota trong Swift
     if (quota_bytes) {
       const headers = {
         'X-Auth-Token': token,
@@ -175,12 +175,12 @@ const createProject = async (req, res) => {
 
       await axios.post(`${SWIFT_URL}/AUTH_${projectId}`, null, { headers });
 
-      console.log(`✅ Assigned quota ${quota_bytes} bytes for project ${projectId}`);
+      console.log(`Assigned quota ${quota_bytes} bytes for project ${projectId}`);
     } else {
-      console.log('⚠️ No quota assigned (quota_bytes not provided)');
+      console.log('No quota assigned (quota_bytes not provided)');
     }
 
-    // 🪄 3️⃣ Trả kết quả về
+  
     return res.status(201).json({
       success: true,
       message: `Project "${projectName}" created successfully${quota_bytes ? ` with quota ${quota_bytes} bytes` : ''}`,
@@ -193,7 +193,7 @@ const createProject = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error while creating project with quota:', error.response?.data || error.message);
+    console.error('Error while creating project with quota:', error.response?.data || error.message);
 
     return res.status(error.response?.status || 500).json({
       success: false,

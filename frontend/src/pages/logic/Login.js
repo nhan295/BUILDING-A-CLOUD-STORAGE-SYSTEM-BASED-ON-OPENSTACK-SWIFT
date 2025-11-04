@@ -33,7 +33,7 @@ export const handleLogin = async (username, password, project, domain) => {
     }
 
     if (data.data?.token) {
-      // 🔹 Lưu last login
+      // Lưu last login
       const currentTime = new Date().toISOString();
       const previousLogin = localStorage.getItem('last_login');
       if (previousLogin) {
@@ -41,7 +41,7 @@ export const handleLogin = async (username, password, project, domain) => {
       }
       localStorage.setItem('last_login', currentTime);
 
-      // 🔹 Lưu thông tin đăng nhập
+      // Lưu thông tin đăng nhập
       localStorage.setItem('auth_token', data.data.token);
       localStorage.setItem('user_info', JSON.stringify(data.data.user));
       localStorage.setItem('project_info', JSON.stringify(data.data.project));
@@ -51,7 +51,7 @@ export const handleLogin = async (username, password, project, domain) => {
         JSON.stringify(data.data.availableProjects)
       );
 
-      // 🔹 Chuyển hướng theo role
+      // Chuyển hướng theo role
       const roles = data.data.roles || [];
       if (roles.includes('admin')) {
         window.location.href = '/dashboard';
@@ -92,11 +92,6 @@ export const handleLogin = async (username, password, project, domain) => {
     };
   }
 };
-
-
-
-//Validate token - check if token is still valid
- 
 
 
 // Get user info - get user info from token
@@ -178,16 +173,4 @@ export const getAvailableProjects = () =>{
 
 export const getAvailableDomains = () => {
   return ['Default'];
-};
-
-
-export default {
-  handleLogin,
-  getUserInfo,
-  isLoggedIn,
-  getStoredUserInfo,
-  getStoredProjectInfo,
-  getStoredRoles,
-  getAvailableProjects,
-  getAvailableDomains
 };

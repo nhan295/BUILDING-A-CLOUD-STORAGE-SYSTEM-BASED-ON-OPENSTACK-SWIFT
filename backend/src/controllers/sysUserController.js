@@ -169,7 +169,7 @@ const assignUsertoProject = async(req,res)=>{
       });
     }
 
-    // 2️⃣ Gán user vào project với role tương ứng
+    //  Gán user vào project với role tương ứng
     await axios.put(
       `${KEYSTONE_URL}/projects/${project_id}/users/${user_id}/roles/${role.id}`,
       null,

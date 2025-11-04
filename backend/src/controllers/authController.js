@@ -195,9 +195,9 @@ const getProjects = async (req, res) => {
 
 
 
-/**
- * Get user info - get user info from token
- */
+
+//Get user info - get user info from token
+
 const getUserInfo = async (req, res) => {
   try {
     const token = req.headers['x-auth-token'];

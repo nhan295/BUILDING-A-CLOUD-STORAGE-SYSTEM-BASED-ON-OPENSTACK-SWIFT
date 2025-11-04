@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Cloud, HardDrive, Upload, Users, BarChart3, Settings, Clock, FolderKanban
+  Cloud, HardDrive, Upload, Users, BarChart3, Clock, FolderKanban
 } from 'lucide-react';
 import { getStoredRoles, getStoredProjectInfo } from '../../pages/logic/Login';
 import '../../components/style/SideBar.css';

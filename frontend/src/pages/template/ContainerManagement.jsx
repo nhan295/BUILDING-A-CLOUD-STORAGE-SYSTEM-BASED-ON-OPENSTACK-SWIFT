@@ -111,12 +111,12 @@ export default function SwiftContainerList() {
       );
 
       if (result.success) {
-        alert(`✅ File "${selectedFile.name}" uploaded successfully!`);
+        alert(`File "${selectedFile.name}" uploaded successfully!`);
       } else {
         // If server reports file already exists
         if (result.message.includes("already exists")) {
           const confirmReplace = window.confirm(
-            `⚠️ File "${selectedFile.name}" already exists in container "${uploadingContainer}".\nDo you want to overwrite it?`
+            `File "${selectedFile.name}" already exists in container "${uploadingContainer}".\nDo you want to overwrite it?`
           );
 
           if (confirmReplace) {
@@ -128,15 +128,15 @@ export default function SwiftContainerList() {
               true
             );
             if (retry.success) {
-              alert(`✅ File "${selectedFile.name}" overwritten successfully!`);
+              alert(`File "${selectedFile.name}" overwritten successfully!`);
             } else {
-              alert(`❌ Upload failed: ${retry.message}`);
+              alert(`Upload failed: ${retry.message}`);
             }
           } else {
-            alert("❎ Overwrite canceled.");
+            alert("Overwrite canceled.");
           }
         } else {
-          alert(`❌ Upload failed: ${result.message}`);
+          alert(`Upload failed: ${result.message}`);
         }
       }
 
@@ -194,14 +194,14 @@ export default function SwiftContainerList() {
   }
 
   if (containers.some((c) => c.name === name)) {
-    alert(`⚠️ Container "${name}" already exists.`);
+    alert(`Container "${name}" already exists.`);
     setNewContainerName("");
     setShowCreateModal(false);
     return;
   }
 
   try {
-    setIsCreating(true); // 🚀 Khóa nút Create khi bắt đầu request
+    setIsCreating(true); //  Khóa nút Create khi bắt đầu request
     const res = await createContainer(name);
 
     if (res.success) {
@@ -212,15 +212,15 @@ export default function SwiftContainerList() {
         lastModified: new Date().toISOString().split("T")[0],
       };
       setContainers((prev) => [...prev, newContainer]);
-      alert(`✅ Container "${name}" created successfully!`);
+      alert(`Container "${name}" created successfully!`);
     } else if (res.message?.toLowerCase().includes("exists")) {
-      alert(`⚠️ Container "${name}" already exists.`);
+      alert(`Container "${name}" already exists.`);
     } else {
-      alert(`❌ Failed to create container: ${res.message || "Unknown error"}`);
+      alert(`Failed to create container: ${res.message || "Unknown error"}`);
     }
   } catch (error) {
     console.error("Error creating container:", error);
-    alert("❌ Failed to create container. Please try again.");
+    alert("Failed to create container. Please try again.");
   } finally {
     setIsCreating(false); // ✅ Mở lại nút sau khi hoàn tất
     setNewContainerName("");
@@ -242,7 +242,7 @@ export default function SwiftContainerList() {
         alert(`Container "${containerName}" deleted successfully!`);
         setContainers(containers.filter((c) => c.name !== containerName));
       } else {
-        alert(`❌ Delete failed: ${response?.message || "Unknown error"}`);
+        alert(`Delete failed: ${response?.message || "Unknown error"}`);
       }
     } catch (error) {
       console.error("Error deleting container:", error);
@@ -250,7 +250,7 @@ export default function SwiftContainerList() {
     }
   };
 
-  // 🗑️ Delete multiple containers
+  // Delete multiple containers
   const handleDeleteSelected = () => {
     if (
       window.confirm(
@@ -264,7 +264,7 @@ export default function SwiftContainerList() {
     }
   };
 
-  // 📥 Download container
+  //  Download container
   const handleDownloadContainer = async (containerName) => {
     try {
       await downloadContainer(containerName);
@@ -275,7 +275,7 @@ export default function SwiftContainerList() {
     }
   };
 
-  // 📂 Navigate to container details
+  //  Navigate to container details
   const handleClick = (container) => {
     navigate(`/container/${container.name}`, {
       state: { containerName: container.name },

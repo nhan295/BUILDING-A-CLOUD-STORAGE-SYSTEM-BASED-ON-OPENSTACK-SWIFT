@@ -5,14 +5,6 @@ const getProjectUsers = async (req, res) => {
   try {
     const adminToken = req.headers['x-auth-token'];
     const projectId = req.project.id;
-    
-    // DEBUG LOG
-    console.log('=== GET PROJECT USERS DEBUG ===');
-    console.log('Project ID:', projectId);
-    console.log('Project Name:', req.project.name);
-    console.log('User ID:', req.user.id);
-    console.log('User Roles:', req.roles);
-    console.log('Keystone URL:', KEYSTONE_URL);
 
     if (!adminToken) {
       return res.status(401).json({

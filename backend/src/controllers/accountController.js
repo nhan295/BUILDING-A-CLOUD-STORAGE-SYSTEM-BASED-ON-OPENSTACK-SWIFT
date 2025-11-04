@@ -62,7 +62,7 @@ const getAccountLogs = async(req,res)=>{
     console.log('Log path:', LOG_PATH);
 
     if (!projectId) {
-      console.warn('⚠️ Missing project_id in request');
+      console.warn('Missing project_id in request');
       return res.status(400).json({ success: false, message: 'Missing project_id' });
     }
 
@@ -114,7 +114,7 @@ const getAccountLogs = async(req,res)=>{
     });
 
   } catch (error) {
-    console.error('❌ ERROR reading Swift logs:', error.message);
+    console.error('ERROR reading Swift logs:', error.message);
     return res.status(500).json({
       success: false,
       message: 'Failed to read Swift logs',

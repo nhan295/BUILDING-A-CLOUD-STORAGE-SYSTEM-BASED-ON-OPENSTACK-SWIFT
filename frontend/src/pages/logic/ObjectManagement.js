@@ -77,10 +77,3 @@ export const downloadObject = async(containerName,objectName)=>{
     alert('Cannot download object!');
   }
 }
-export default{
-    getObject,
-    uploadFile,
-    deleteObject,
-    downloadObject
-
-}

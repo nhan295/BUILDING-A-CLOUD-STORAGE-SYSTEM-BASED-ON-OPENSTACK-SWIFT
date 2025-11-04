@@ -56,7 +56,6 @@ export default function Header() {
       </div>
 
       <div className="header-right">
-        {/* Profile */}
         <div className="header-icon-wrapper" ref={profileRef}>
           <button
             className="profile-btn"
