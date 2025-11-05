@@ -151,12 +151,19 @@ const deleteUser = async(req,res)=>{
   }
 }
 
-const assignUsertoProject = async(req,res)=>{
-    try {
+const assignUserToProject = async (req, res) => {
+  try {
     const token = req.headers['x-auth-token'];
-    const { project_id, user_id, role_name } = req.body; // role_name : 'member', 'admin'
+    const { project_id, user_id, role_name } = req.body; // role_name: 'member', 'admin'
 
-    // get role list
+    if (!project_id || !user_id || !role_name) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required parameters: project_id, user_id, or role_name.",
+      });
+    }
+
+    // Lấy danh sách roles có sẵn trong Keystone
     const rolesRes = await axios.get(`${KEYSTONE_URL}/roles`, {
       headers: { 'X-Auth-Token': token },
     });
@@ -165,7 +172,23 @@ const assignUsertoProject = async(req,res)=>{
     if (!role) {
       return res.status(404).json({
         success: false,
-        message: `Role '${role_name}' not found`,
+        message: `Role '${role_name}' not found.`,
+      });
+    }
+
+    //  Kiểm tra xem user đã có role đó trong project chưa
+    const assignedRolesRes = await axios.get(
+      `${KEYSTONE_URL}/projects/${project_id}/users/${user_id}/roles`,
+      { headers: { 'X-Auth-Token': token } }
+    );
+
+    const assignedRoles = assignedRolesRes.data.roles || [];
+    const alreadyHasRole = assignedRoles.some((r) => r.id === role.id);
+
+    if (alreadyHasRole) {
+      return res.status(400).json({
+        success: false,
+        message: `User already has role '${role_name}' in this project.`,
       });
     }
 
@@ -178,17 +201,18 @@ const assignUsertoProject = async(req,res)=>{
 
     return res.status(200).json({
       success: true,
-      message: `User assigned to project successfully with role '${role_name}'`,
+      message: `User assigned to project successfully with role '${role_name}'.`,
     });
   } catch (error) {
     console.error('Error assigning user to project:', error.response?.data || error.message);
     return res.status(error.response?.status || 500).json({
       success: false,
-      message: 'Failed to assign user to project',
+      message: 'Failed to assign user to project.',
       error: error.response?.data || error.message,
     });
   }
-}
+};
+
 
 const removeUserFromProject = async(req,res)=>{
   try {
@@ -256,7 +280,7 @@ module.exports = {
     getUsers,
     createUser,
     deleteUser,
-    assignUsertoProject,
+    assignUserToProject,
     removeUserFromProject
 }
 
