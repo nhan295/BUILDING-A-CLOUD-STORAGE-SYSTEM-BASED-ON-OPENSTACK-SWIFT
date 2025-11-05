@@ -96,12 +96,3 @@ export const downloadContainer = async(containerName) => {
     alert("Cannot download container!");
   }
 };
-
-
-export default {
-    getContainers,
-    createContainer,
-    uploadFile,
-    delContainer,
-    downloadContainer
-}

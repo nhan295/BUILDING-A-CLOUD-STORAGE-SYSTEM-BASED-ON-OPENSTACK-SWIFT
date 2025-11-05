@@ -174,11 +174,6 @@ export default function LoginPage() {
             </button>
           </div>
         </div>
-
-        {/* Footer */}
-        <div className="footer">
-          <p>OpenStack Keystone v3 • API</p>
-        </div>
       </div>
     </div>
   );

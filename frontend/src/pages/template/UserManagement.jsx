@@ -9,7 +9,7 @@ import {
   X,
   Key,
   User,
-  Shuffle
+  Shuffle,
 } from "lucide-react";
 import {
   getUsers,
@@ -34,6 +34,8 @@ export default function UserManagement() {
     projectName: "",
     role: "member",
   });
+
+  const [loading, setLoading] = useState(false);
   const [projects, setProjects] = useState([]);
   const [selectedProjectFilter, setSelectedProjectFilter] = useState("");
 
@@ -43,29 +45,32 @@ export default function UserManagement() {
   const projectName = projectInfo?.name || "Unknown Project";
 
   const generatePassword = () => {
-  const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  const lowercase = 'abcdefghijklmnopqrstuvwxyz';
-  const numbers = '0123456789';
-  const special = '!@#$%^&*';
-  
-  let password = '';
-  password += uppercase[Math.floor(Math.random() * uppercase.length)];
-  password += lowercase[Math.floor(Math.random() * lowercase.length)];
-  password += numbers[Math.floor(Math.random() * numbers.length)];
-  password += special[Math.floor(Math.random() * special.length)];
-  
-  const allChars = uppercase + lowercase + numbers + special;
-  for (let i = 0; i < 4; i++) {
-    password += allChars[Math.floor(Math.random() * allChars.length)];
-  }
-  
-  return password.split('').sort(() => Math.random() - 0.5).join('');
-};
+    const uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const lowercase = "abcdefghijklmnopqrstuvwxyz";
+    const numbers = "0123456789";
+    const special = "!@#$%^&*";
 
-const handleGeneratePassword = () => {
-  const newPassword = generatePassword();
-  setNewUser({ ...newUser, password: newPassword });
-};
+    let password = "";
+    password += uppercase[Math.floor(Math.random() * uppercase.length)];
+    password += lowercase[Math.floor(Math.random() * lowercase.length)];
+    password += numbers[Math.floor(Math.random() * numbers.length)];
+    password += special[Math.floor(Math.random() * special.length)];
+
+    const allChars = uppercase + lowercase + numbers + special;
+    for (let i = 0; i < 4; i++) {
+      password += allChars[Math.floor(Math.random() * allChars.length)];
+    }
+
+    return password
+      .split("")
+      .sort(() => Math.random() - 0.5)
+      .join("");
+  };
+
+  const handleGeneratePassword = () => {
+    const newPassword = generatePassword();
+    setNewUser({ ...newUser, password: newPassword });
+  };
 
   const isSuperAdmin =
     role === "admin" && projectName.toLowerCase() === "admin";
@@ -170,13 +175,15 @@ const handleGeneratePassword = () => {
     return matchesSearch && matchesProject;
   });
 
+  
   const handleCreateUser = async (e) => {
     e.preventDefault();
-
+    setLoading(true);
     if (!newUser.username || !newUser.password) {
       alert("Please fill in all required fields.");
       return;
     }
+    
 
     try {
       const response = await createUser(newUser.username, newUser.password);
@@ -199,6 +206,7 @@ const handleGeneratePassword = () => {
       console.error("Error while creating user:", error);
       alert("An error occurred while creating the user.");
     } finally {
+      setLoading(false)
       setShowCreateModal(false);
       setNewUser({ username: "", password: "" });
     }
@@ -206,7 +214,7 @@ const handleGeneratePassword = () => {
 
   const handleAssigntoProject = async (e) => {
     e.preventDefault();
-
+    setLoading(true);
     // Kiểm tra chọn project
     if (!assignData.projectId || !assignData.projectName) {
       alert("Please select a project.");
@@ -257,6 +265,8 @@ const handleGeneratePassword = () => {
     } catch (error) {
       console.error("Error in handleAssignToProject:", error);
       alert("An error occurred while assigning the user.");
+    }finally {
+      setLoading(false);
     }
   };
 
@@ -343,12 +353,12 @@ const handleGeneratePassword = () => {
           </select>
 
           <button
-              className="um-btn-create"
-              onClick={() => setShowCreateModal(true)}
-            >
-              <Plus className="um-icon" />
-              Create User
-            </button>
+            className="um-btn-create"
+            onClick={() => setShowCreateModal(true)}
+          >
+            <Plus className="um-icon" />
+            Create User
+          </button>
         </div>
 
         <div className="um-table-card">
@@ -476,31 +486,32 @@ const handleGeneratePassword = () => {
                   </div>
                 </div>
                 <div className="um-form-group">
-  <label>Password</label>
-  <div className="um-input-with-icon">
-    <Key className="um-input-icon" size={18} />
-    <input
-      type="text"
-      value={newUser.password}
-      onChange={(e) =>
-        setNewUser({ ...newUser, password: e.target.value })
-      }
-      placeholder="Enter password"
-      className="um-form-input um-with-icon um-with-generate"
-    />
-    <button
-      type="button"
-      className="um-btn-generate"
-      onClick={handleGeneratePassword}
-      title="Generate random password"
-    >
-      <Shuffle size={18} />
-    </button>
-  </div>
-  <small className="um-password-hint">
-    Click <Shuffle size={12} className="um-inline-icon" /> to generate a secure password
-  </small>
-</div>
+                  <label>Password</label>
+                  <div className="um-input-with-icon">
+                    <Key className="um-input-icon" size={18} />
+                    <input
+                      type="text"
+                      value={newUser.password}
+                      onChange={(e) =>
+                        setNewUser({ ...newUser, password: e.target.value })
+                      }
+                      placeholder="Enter password"
+                      className="um-form-input um-with-icon um-with-generate"
+                    />
+                    <button
+                      type="button"
+                      className="um-btn-generate"
+                      onClick={handleGeneratePassword}
+                      title="Generate random password"
+                    >
+                      <Shuffle size={18} />
+                    </button>
+                  </div>
+                  <small className="um-password-hint">
+                    Click <Shuffle size={12} className="um-inline-icon" /> to
+                    generate a secure password
+                  </small>
+                </div>
                 <div className="um-modal-actions">
                   <button
                     type="button"
@@ -509,8 +520,12 @@ const handleGeneratePassword = () => {
                   >
                     Cancel
                   </button>
-                  <button type="submit" className="um-btn-submit">
-                    Create
+                  <button 
+                  type="submit" 
+                  className="um-btn-submit"
+                  disabled={loading}
+                  >
+                    {loading ? "Creating..." : "Create"}
                   </button>
                 </div>
               </form>
@@ -522,8 +537,8 @@ const handleGeneratePassword = () => {
         {showAssignModal && selectedUser && (
           <div
             className="um-modal-overlay"
-            onClick={() => setShowAssignModal(false)}
-          >
+            onClick={() => setShowAssignModal(false)}>
+          
             <div
               className="um-modal-content"
               onClick={(e) => e.stopPropagation()}
@@ -591,8 +606,11 @@ const handleGeneratePassword = () => {
                   >
                     Cancel
                   </button>
-                  <button type="submit" className="um-btn-submit">
-                    Assign
+                  <button 
+                  type="submit"
+                  className="um-btn-submit"
+                  disabled={loading}>
+                    {loading ? "Assigning..." : "Assign"}
                   </button>
                 </div>
               </form>

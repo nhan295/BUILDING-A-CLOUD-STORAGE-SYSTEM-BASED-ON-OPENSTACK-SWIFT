@@ -563,6 +563,12 @@
     color: white;
 }
 
+.um-btn-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+
 .um-btn-submit:hover {
     background-color: #5568d3;
     transform: translateY(-1px);
