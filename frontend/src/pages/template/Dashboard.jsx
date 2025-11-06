@@ -135,7 +135,7 @@ export default function SwiftDashboard() {
           .slice(0, 5) // Giới hạn 5 logs gần nhất
           .map((log, index) => ({
             id: index + 1,
-            projectId: log.project.id,
+            projectId: log.projectId,
             type: mapActionToType(log.action),
             user: log.username,
             file: log.details,

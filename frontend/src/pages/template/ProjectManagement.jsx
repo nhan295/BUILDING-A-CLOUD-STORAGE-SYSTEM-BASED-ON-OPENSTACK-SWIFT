@@ -9,6 +9,7 @@ export default function ProjectManager() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showQuotaModal, setShowQuotaModal] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const [newProject, setNewProject] = useState({
     name: '',
@@ -59,6 +60,7 @@ export default function ProjectManager() {
   };
 
   const handleCreateProject = async () => {
+    setLoading(true)
     try {
       const projectName = newProject.name.trim();
       const description = newProject.description.trim();
@@ -93,6 +95,8 @@ export default function ProjectManager() {
     } catch (error) {
       console.error("Error creating project:", error);
       alert("An error occurred while creating the project.");
+    }finally{
+      setLoading (false);
     }
   };
 
@@ -169,7 +173,9 @@ export default function ProjectManager() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <button onClick={() => setShowCreateModal(true)} className="pm-btn pm-btn-primary">
+        <button 
+        onClick={() => setShowCreateModal(true)} 
+        className="pm-btn pm-btn-primary">
           <Plus size={20} />
           Create Project
         </button>
@@ -290,10 +296,10 @@ export default function ProjectManager() {
               </button>
               <button
                 onClick={handleCreateProject}
-                disabled={!newProject.name || !newProject.quota}
+                disabled={!newProject.name || !newProject.quota || loading}
                 className="pm-btn pm-btn-primary"
               >
-                Create Project
+                {loading ? "Creating..." : "Create"}
               </button>
             </div>
           </div>
@@ -342,10 +348,10 @@ export default function ProjectManager() {
               </button>
               <button
                 onClick={handleUpdateQuota}
-                disabled={!quotaEdit.quota}
+                disabled={!quotaEdit.quota || loading}
                 className="pm-btn pm-btn-primary"
               >
-                Update
+                {loading ? "Updating..." : "Update"}
               </button>
             </div>
           </div>
