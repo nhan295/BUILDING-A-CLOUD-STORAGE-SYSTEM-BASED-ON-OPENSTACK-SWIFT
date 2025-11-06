@@ -232,34 +232,31 @@ const removeUserFromProject = async(req,res)=>{
       });
     }
 
-    console.log("=== DEBUG: Removing user from project ===");
-    console.log("Project ID:", projectId);
-    console.log("User ID:", userId);
-
+    // Lấy role duy nhất của user trong project
     const rolesRes = await axios.get(
       `${KEYSTONE_URL}/projects/${projectId}/users/${userId}/roles`,
       {
         headers: { "X-Auth-Token": token },
       }
     );
-    // check if user has roles in the project
+
     const roles = rolesRes.data.roles || [];
     if (roles.length === 0) {
       return res.status(404).json({
         success: false,
-        message: "User has no roles in this project.",
+        message: "User has no role in this project.",
       });
     }
 
-    // Lặp qua từng role để xóa
-    for (const role of roles) {
-      await axios.delete(`${KEYSTONE_URL}/projects/${projectId}/users/${userId}/roles/${role.id}`,
-        {
-          headers: { "X-Auth-Token": token },
-        }
-      );
-      console.log(`Removed role ${role.name} (${role.id})`);
-    }
+    // cho phép user chỉ có 1 role duy nhất trong project
+    const roleId = roles[0].id;
+
+    await axios.delete(
+      `${KEYSTONE_URL}/projects/${projectId}/users/${userId}/roles/${roleId}`,
+      {
+        headers: { "X-Auth-Token": token },
+      }
+    );
 
     return res.status(200).json({
       success: true,
