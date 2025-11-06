@@ -6,7 +6,7 @@ import {
   FolderOpen,
   RefreshCw,
   Download,
-  Upload
+  Upload,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import "../style/ContainerManagement.css";
@@ -16,7 +16,8 @@ import {
   createContainer,
   uploadFile,
   delContainer,
-  downloadContainer
+  downloadContainer,
+  delSelectedContainer
 } from "../../pages/logic/ContainerManagement";
 
 export default function SwiftContainerList() {
@@ -33,7 +34,6 @@ export default function SwiftContainerList() {
   const [isUploading, setIsUploading] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
 
-
   const roles = getStoredRoles() || [];
   const isAdmin = roles.includes("admin");
   const navigate = useNavigate();
@@ -46,22 +46,24 @@ export default function SwiftContainerList() {
         console.log("Containers from API:", data);
 
         const list = data.map((item) => {
-  let lastModified = "N/A";
-  try {
-    if (item.last_modified) {
-      lastModified = new Date(item.last_modified).toISOString().split("T")[0];
-    }
-  } catch {
-    lastModified = "N/A";
-  }
+          let lastModified = "N/A";
+          try {
+            if (item.last_modified) {
+              lastModified = new Date(item.last_modified)
+                .toISOString()
+                .split("T")[0];
+            }
+          } catch {
+            lastModified = "N/A";
+          }
 
-  return {
-    name: item.name,
-    object: item.objects || 0,
-    bytes: item.bytes || 0,
-    lastModified,
-  };
-});
+          return {
+            name: item.name,
+            object: item.objects || 0,
+            bytes: item.bytes || 0,
+            lastModified,
+          };
+        });
         setContainers(list);
       } catch (error) {
         console.error("Error loading containers:", error);
@@ -71,7 +73,7 @@ export default function SwiftContainerList() {
     fetchContainer();
   }, []);
 
-  // 📏 Format bytes into readable units
+  //  Format bytes into readable units
   const formatBytes = (bytes) => {
     if (bytes === 0) return "0 Bytes";
     const k = 1024;
@@ -80,7 +82,7 @@ export default function SwiftContainerList() {
     return (bytes / Math.pow(k, i)).toFixed(2) + " " + sizes[i];
   };
 
-  // 🔍 Filter containers by name
+  //  Filter containers by name
   const filteredContainers = containers.filter(
     (container) =>
       container.name &&
@@ -92,7 +94,7 @@ export default function SwiftContainerList() {
     setShowUploadModal(true);
   };
 
-  // 📤 Upload file
+  //  Upload file
   const handleUploadFile = async () => {
     if (!selectedFile || !uploadingContainer) {
       alert("Please select a file to upload.");
@@ -146,9 +148,7 @@ export default function SwiftContainerList() {
         name: item.name,
         object: item.objects,
         bytes: item.bytes,
-        lastModified: new Date(item.last_modified)
-          .toISOString()
-          .split("T")[0],
+        lastModified: new Date(item.last_modified).toISOString().split("T")[0],
       }));
       setContainers(list);
 
@@ -186,54 +186,54 @@ export default function SwiftContainerList() {
     setTimeout(() => setIsLoading(false), 1000);
   };
 
- const handleCreateContainer = async () => {
-  const name = newContainerName.trim();
-  if (!name) {
-    alert("Please enter a container name.");
-    return;
-  }
-
-  if (containers.some((c) => c.name === name)) {
-    alert(`Container "${name}" already exists.`);
-    setNewContainerName("");
-    setShowCreateModal(false);
-    return;
-  }
-
-  try {
-    setIsCreating(true); //  Khóa nút Create khi bắt đầu request
-    const res = await createContainer(name);
-
-    if (res.success) {
-      const newContainer = {
-        name,
-        object: 0,
-        bytes: 0,
-        lastModified: new Date().toISOString().split("T")[0],
-      };
-      setContainers((prev) => [...prev, newContainer]);
-      alert(`Container "${name}" created successfully!`);
-    } else if (res.message?.toLowerCase().includes("exists")) {
-      alert(`Container "${name}" already exists.`);
-    } else {
-      alert(`Failed to create container: ${res.message || "Unknown error"}`);
+  const handleCreateContainer = async () => {
+    const name = newContainerName.trim();
+    if (!name) {
+      alert("Please enter a container name.");
+      return;
     }
-  } catch (error) {
-    console.error("Error creating container:", error);
-    alert("Failed to create container. Please try again.");
-  } finally {
-    setIsCreating(false); // ✅ Mở lại nút sau khi hoàn tất
-    setNewContainerName("");
-    setShowCreateModal(false);
-  }
-};
 
+    if (containers.some((c) => c.name === name)) {
+      alert(`Container "${name}" already exists.`);
+      setNewContainerName("");
+      setShowCreateModal(false);
+      return;
+    }
 
+    try {
+      setIsCreating(true); //  Khóa nút Create khi bắt đầu request
+      const res = await createContainer(name);
+
+      if (res.success) {
+        const newContainer = {
+          name,
+          object: 0,
+          bytes: 0,
+          lastModified: new Date().toISOString().split("T")[0],
+        };
+        setContainers((prev) => [...prev, newContainer]);
+        alert(`Container "${name}" created successfully!`);
+      } else if (res.message?.toLowerCase().includes("exists")) {
+        alert(`Container "${name}" already exists.`);
+      } else {
+        alert(`Failed to create container: ${res.message || "Unknown error"}`);
+      }
+    } catch (error) {
+      console.error("Error creating container:", error);
+      alert("Failed to create container. Please try again.");
+    } finally {
+      setIsCreating(false); // ✅ Mở lại nút sau khi hoàn tất
+      setNewContainerName("");
+      setShowCreateModal(false);
+    }
+  };
 
   //  Delete single container
   const handleDeleteContainer = async (containerName) => {
     if (
-      !window.confirm(`Are you sure you want to delete container "${containerName}"?`)
+      !window.confirm(
+        `Are you sure you want to delete container "${containerName}"?`
+      )
     )
       return;
     try {
@@ -251,18 +251,36 @@ export default function SwiftContainerList() {
   };
 
   // Delete multiple containers
-  const handleDeleteSelected = () => {
-    if (
-      window.confirm(
-        `Are you sure you want to delete ${selectedContainers.length} container(s)?`
-      )
-    ) {
-      setContainers(
-        containers.filter((c) => !selectedContainers.includes(c.name))
+  const handleDeleteSelected = async () => {
+  if (
+    !window.confirm(
+      `Are you sure you want to delete ${selectedContainers.length} container(s)?`
+    )
+  )
+    return;
+
+  try {
+    // Gửi danh sách container cần xóa lên API
+    const containerName = selectedContainers.join(","); // nối thành chuỗi để gửi qua URL
+    const response = await delSelectedContainer(containerName);
+
+    if (response?.success) {
+      alert(`Deleted ${selectedContainers.length} container(s) successfully!`);
+
+      // Cập nhật lại danh sách containers trong UI
+      setContainers((prev) =>
+        prev.filter((c) => !selectedContainers.includes(c.name))
       );
       setSelectedContainers([]);
+    } else {
+      alert(`Delete failed: ${response?.message || "Unknown error"}`);
     }
-  };
+  } catch (error) {
+    console.error("Error deleting selected containers:", error);
+    alert("An error occurred while deleting containers!");
+  }
+};
+
 
   //  Download container
   const handleDownloadContainer = async (containerName) => {
@@ -351,16 +369,18 @@ export default function SwiftContainerList() {
         <table className="container-table">
           <thead>
             <tr>
-              <th className="checkbox-col">
-                <input
-                  type="checkbox"
-                  onChange={handleSelectAll}
-                  checked={
-                    selectedContainers.length === filteredContainers.length &&
-                    filteredContainers.length > 0
-                  }
-                />
-              </th>
+              {isAdmin && (
+                <th className="checkbox-col">
+                  <input
+                    type="checkbox"
+                    onChange={handleSelectAll}
+                    checked={
+                      selectedContainers.length === filteredContainers.length &&
+                      filteredContainers.length > 0
+                    }
+                  />
+                </th>
+              )}
               <th>Container Name</th>
               <th>Object Count</th>
               <th>Last Modified</th>
@@ -375,13 +395,15 @@ export default function SwiftContainerList() {
                   selectedContainers.includes(container.name) ? "selected" : ""
                 }
               >
-                <td className="checkbox-col">
-                  <input
-                    type="checkbox"
-                    checked={selectedContainers.includes(container.name)}
-                    onChange={() => handleSelectContainer(container.name)}
-                  />
-                </td>
+                {isAdmin && (
+                  <td className="checkbox-col">
+                    <input
+                      type="checkbox"
+                      checked={selectedContainers.includes(container.name)}
+                      onChange={() => handleSelectContainer(container.name)}
+                    />
+                  </td>
+                )}
                 <td>
                   <div
                     className="container-name"
@@ -406,9 +428,7 @@ export default function SwiftContainerList() {
                     <button
                       className="icon-btn"
                       title="Download"
-                      onClick={() =>
-                        handleDownloadContainer(container.name)
-                      }
+                      onClick={() => handleDownloadContainer(container.name)}
                     >
                       <Download size={16} />
                     </button>
@@ -416,9 +436,7 @@ export default function SwiftContainerList() {
                       <button
                         className="icon-btn danger"
                         title="Delete"
-                        onClick={() =>
-                          handleDeleteContainer(container.name)
-                        }
+                        onClick={() => handleDeleteContainer(container.name)}
                       >
                         <Trash2 size={16} />
                       </button>
@@ -440,7 +458,10 @@ export default function SwiftContainerList() {
 
       {/* Create container modal */}
       {showCreateModal && (
-        <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
+        <div
+          className="modal-overlay"
+          onClick={() => setShowCreateModal(false)}
+        >
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h2>Create New Container</h2>
             <input
@@ -458,10 +479,11 @@ export default function SwiftContainerList() {
               >
                 Cancel
               </button>
-              <button 
-              className="btn btn-primary" 
-              onClick={handleCreateContainer}
-              disabled={isCreating}>
+              <button
+                className="btn btn-primary"
+                onClick={handleCreateContainer}
+                disabled={isCreating}
+              >
                 {isCreating ? "Creating..." : "Create"}
               </button>
             </div>
@@ -471,7 +493,10 @@ export default function SwiftContainerList() {
 
       {/* Upload modal */}
       {showUploadModal && (
-        <div className="modal-overlay" onClick={() => setShowUploadModal(false)}>
+        <div
+          className="modal-overlay"
+          onClick={() => setShowUploadModal(false)}
+        >
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h2>Upload file to container "{uploadingContainer}"</h2>
 
@@ -493,9 +518,7 @@ export default function SwiftContainerList() {
                 onClick={handleUploadFile}
                 disabled={!selectedFile || isUploading}
               >
-                {isUploading
-                  ? `Uploading... (${uploadProgress}%)`
-                  : "Upload"}
+                {isUploading ? `Uploading... (${uploadProgress}%)` : "Upload"}
               </button>
             </div>
           </div>

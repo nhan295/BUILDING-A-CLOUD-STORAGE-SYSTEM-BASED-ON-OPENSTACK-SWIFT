@@ -96,3 +96,18 @@ export const downloadContainer = async(containerName) => {
     alert("Cannot download container!");
   }
 };
+
+export const delSelectedContainer = async(containerName)=>{
+  try{
+    const response = await api.delete(`/api/containers/delete-selected-container/${containerName}`)
+    if(response.data.success){
+      return {
+        success: true,
+        message: response.data.message
+      };
+    }
+  }catch(error){
+    console.error('Error while delete container', error);
+  }
+
+}

@@ -9,4 +9,5 @@ module.exports.setup = (app)=>{
     router.post('/create-container',validateToken,containerController.createContainer);
     router.delete('/delete-container/:containerName',validateToken,containerController.delContainer);
     router.get('/download-container/:containerName',validateToken,containerController.downloadContainer);
+    router.delete('/delete-selected-container/:containerName',validateToken,containerController.delSelectedContainer)
 }

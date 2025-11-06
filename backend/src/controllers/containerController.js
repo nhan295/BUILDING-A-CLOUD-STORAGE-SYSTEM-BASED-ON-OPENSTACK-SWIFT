@@ -119,6 +119,78 @@ const delContainer = async (req, res) => {
   }
 };
 
+const delSelectedContainer = async(req,res)=>{
+  try {
+    const token = req.token;
+    const projectId = req.project.id;
+
+    // Lấy danh sách container từ param, ví dụ: "demo1,demo2,demo3"
+    const containerName = req.params.containerName;
+    if (!containerName) {
+      return res.status(400).json({
+        success: false,
+        message: "Thiếu danh sách container cần xóa.",
+      });
+    }
+
+    const containers = containerName.split(",").map((c) => c.trim());
+    const username = req.user?.username || req.project?.username || "unknown";
+    const results = [];
+
+    for (const containerName of containers) {
+      try {
+        //  Lấy danh sách object
+        const listRes = await axios.get(
+          `${SWIFT_URL}/AUTH_${projectId}/${containerName}?format=json`,
+          { headers: { "X-Auth-Token": token } }
+        );
+
+        const objects = listRes.data || [];
+
+        // 🔹 Xóa object trong container
+        for (const obj of objects) {
+          await axios.delete(
+            `${SWIFT_URL}/AUTH_${projectId}/${containerName}/${encodeURIComponent(obj.name)}`,
+            { headers: { "X-Auth-Token": token } }
+          );
+        }
+
+        // 🔹 Xóa container
+        await axios.delete(`${SWIFT_URL}/AUTH_${projectId}/${containerName}`, {
+          headers: { "X-Auth-Token": token },
+        });
+
+        await logActivity(username, "Delete", `Deleted container ${containerName}`, projectId);
+        results.push({
+          container: containerName,
+          status: "deleted",
+          objectsDeleted: objects.length,
+        });
+      } catch (err) {
+        console.error(`Lỗi khi xóa container ${containerName}:`, err.message);
+        results.push({
+          container: containerName,
+          status: "failed",
+          message: err.response?.data || err.message,
+        });
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Đã hoàn tất quá trình xóa các container được chọn.",
+      results,
+    });
+  } catch (error) {
+    console.error("Lỗi khi xóa nhiều container:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: "Lỗi máy chủ trong quá trình xóa container.",
+      error: error.message,
+    });
+  }
+}
+
 
 const createContainer = async (req, res) => {
    try {
@@ -194,5 +266,6 @@ module.exports = {
   getContainers,
   delContainer,
   createContainer,
-  downloadContainer
+  downloadContainer,
+  delSelectedContainer
 }
