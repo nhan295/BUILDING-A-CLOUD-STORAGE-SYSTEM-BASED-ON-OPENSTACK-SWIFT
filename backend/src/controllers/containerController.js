@@ -87,7 +87,7 @@ const delContainer = async (req, res) => {
     });
 
      const username = req.user?.username || req.project?.username || 'unknown';
-    logActivity(username, "Delete", `Deleted container ${containerName}`);
+    logActivity(username, "Delete", `Deleted container ${containerName}`,projectId);
     return res.status(200).json({
       success: true,
       message:
@@ -144,7 +144,7 @@ const createContainer = async (req, res) => {
 
     const username = req.user?.username || req.project?.username || 'unknown';
     
-    logActivity(username, "Create", `Created container ${container}`);
+    logActivity(username, "Create", `Created container ${container}`,projectId);
     const status = response.status === 201 ? 'created' : 'already exists';
 
     return res.status(200).json({

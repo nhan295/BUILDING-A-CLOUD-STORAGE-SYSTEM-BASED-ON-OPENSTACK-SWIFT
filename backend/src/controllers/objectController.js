@@ -120,7 +120,7 @@ const newObject = async (req, res) => {
       },
     });
      const username = req.user?.username || req.project?.username || 'unknown';
-    logActivity(username, "Upload", `File ${objectName} upload to ${containerName}`);
+    logActivity(username, "Upload", `File ${objectName} upload to ${containerName}`,projectId);
 
     return res.status(201).json({
       success: true,
@@ -164,7 +164,7 @@ const delObject = async (req, res) => {
       headers: { 'X-Auth-Token': token },
     });
     const username = req.user?.username || req.project?.username || 'unknown';
-    logActivity(username, "Delete", `File ${objectName} delete from ${containerName}`);
+    logActivity(username, "Delete", `File ${objectName} delete from ${containerName}`,projectId);
 
     return res.status(200).json({
       success: true,

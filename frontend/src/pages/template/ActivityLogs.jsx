@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Upload, TrendingUp, FileText, Folder, Activity, Filter, Calendar } from 'lucide-react';
-import { activityLogger } from '../../pages/logic/ActivityLogs';
+import { activityLogger, getStoredProjectInfo } from '../../pages/logic/ActivityLogs';
 import '../style/ActivityLogs.css';
 
 export default function ActivityLogs() {
@@ -9,11 +9,22 @@ export default function ActivityLogs() {
   const [dateFilter, setDateFilter] = useState('all');
   const [actionFilter, setActionFilter] = useState('all');
 
+  // 📦 Lấy thông tin project hiện tại
+  const project = getStoredProjectInfo();
+  const projectId = project?.id;
+  const projectName = project?.name;
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         const logs = await activityLogger();
-        const formattedLogs = logs.map((log, index) => ({
+
+        // ✅ Lọc log theo project hiện tại
+        const projectLogs = logs.filter(
+          (log) => log.projectId === projectId
+        );
+
+        const formattedLogs = projectLogs.map((log, index) => ({
           id: index + 1,
           type: mapActionToType(log.action),
           user: log.username,
@@ -21,21 +32,20 @@ export default function ActivityLogs() {
           time: new Date(log.time).toLocaleString(),
           timestamp: new Date(log.time),
           size: '-',
-          action: log.action
+          action: log.action,
         }));
+
         setRecentActivities(formattedLogs);
-        
-        // Apply filters ngay sau khi fetch
         applyFilters(formattedLogs, dateFilter, actionFilter);
       } catch (error) {
-        console.error("Error while fetching dashboard data:", error);
+        console.error('Error while fetching activity logs:', error);
       }
     };
 
-    fetchData();
-  }, []);
+    if (projectId) fetchData();
+  }, [projectId]);
 
-  // Chỉ cần 1 useEffect để handle filter changes
+  // 🔄 Cập nhật khi filter thay đổi
   useEffect(() => {
     applyFilters(recentActivities, dateFilter, actionFilter);
   }, [dateFilter, actionFilter]);
@@ -51,25 +61,30 @@ export default function ActivityLogs() {
 
   const getActivityIcon = (type) => {
     switch (type) {
-      case 'upload': return <Upload className="activity-icon upload" />;
-      case 'download': return <TrendingUp className="activity-icon download" />;
-      case 'delete': return <FileText className="activity-icon delete" />;
-      case 'create': return <Folder className="activity-icon create" />;
-      default: return <Activity className="activity-icon" />;
+      case 'upload':
+        return <Upload className="activity-icon upload" />;
+      case 'download':
+        return <TrendingUp className="activity-icon download" />;
+      case 'delete':
+        return <FileText className="activity-icon delete" />;
+      case 'create':
+        return <Folder className="activity-icon create" />;
+      default:
+        return <Activity className="activity-icon" />;
     }
   };
 
   const applyFilters = (activities, dateF, actionF) => {
     let filtered = [...activities];
 
-    // Lọc theo ngày
+    // 🗓️ Lọc theo ngày
     if (dateF !== 'all') {
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      
-      filtered = filtered.filter(activity => {
+
+      filtered = filtered.filter((activity) => {
         const activityDate = activity.timestamp;
-        
+
         switch (dateF) {
           case 'today': {
             return activityDate >= today;
@@ -90,9 +105,9 @@ export default function ActivityLogs() {
       });
     }
 
-    // Lọc theo action
+    // ⚙️ Lọc theo hành động
     if (actionF !== 'all') {
-      filtered = filtered.filter(activity => activity.type === actionF);
+      filtered = filtered.filter((activity) => activity.type === actionF);
     }
 
     setFilteredActivities(filtered);
@@ -102,13 +117,17 @@ export default function ActivityLogs() {
     <div className="al-container">
       <div className="al-card">
         <div className="al-header">
-          <h2>Recent System Activities</h2>
+          <h2>
+            {projectName
+              ? `Recent Activities - ${projectName}`
+              : 'Recent System Activities'}
+          </h2>
           <div className="al-filter-section">
             <div className="al-filter-group">
               <Calendar className="al-filter-icon" size={16} />
-              <select 
+              <select
                 className="al-filter-select"
-                value={dateFilter} 
+                value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value)}
               >
                 <option value="all">All Time</option>
@@ -117,12 +136,12 @@ export default function ActivityLogs() {
                 <option value="7days">Last 7 Days</option>
               </select>
             </div>
-            
+
             <div className="al-filter-group">
               <Filter className="al-filter-icon" size={16} />
-              <select 
+              <select
                 className="al-filter-select"
-                value={actionFilter} 
+                value={actionFilter}
                 onChange={(e) => setActionFilter(e.target.value)}
               >
                 <option value="all">All Actions</option>
@@ -135,30 +154,37 @@ export default function ActivityLogs() {
             </div>
           </div>
         </div>
-        
+
         <div className="al-body">
-          {filteredActivities.length > 0 ? (
-            <div className="al-list">
-              {filteredActivities.map((activity) => (
-                <div key={activity.id} className="al-item">
-                  <div className="al-icon-wrapper">
-                    {getActivityIcon(activity.type)}
+          {projectId ? (
+            filteredActivities.length > 0 ? (
+              <div className="al-list">
+                {filteredActivities.map((activity) => (
+                  <div key={activity.id} className="al-item">
+                    <div className="al-icon-wrapper">
+                      {getActivityIcon(activity.type)}
+                    </div>
+                    <div className="al-details">
+                      <p className="al-file">{activity.file}</p>
+                      <p className="al-user">{activity.user}</p>
+                    </div>
+                    <div className="al-meta">
+                      <p className="al-size">{activity.size}</p>
+                      <p className="al-time">{activity.time}</p>
+                    </div>
                   </div>
-                  <div className="al-details">
-                    <p className="al-file">{activity.file}</p>
-                    <p className="al-user">{activity.user}</p>
-                  </div>
-                  <div className="al-meta">
-                    <p className="al-size">{activity.size}</p>
-                    <p className="al-time">{activity.time}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="al-empty">
+                <Activity size={48} />
+                <p>No activities found for the selected filters</p>
+              </div>
+            )
           ) : (
             <div className="al-empty">
               <Activity size={48} />
-              <p>No activities found for the selected filters</p>
+              <p>No project selected</p>
             </div>
           )}
         </div>

@@ -9,3 +9,9 @@ export const activityLogger = async()=>{
         console.error("Failed to fetch recent activities:", error.message);
     }
 }
+
+export const getStoredProjectInfo = () => {
+  const projectInfo = localStorage.getItem('project_info');
+  return projectInfo ? JSON.parse(projectInfo) : null;
+};
+

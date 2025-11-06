@@ -46,6 +46,7 @@ export default function SwiftDashboard() {
   const role = roles.includes("admin") ? "admin" : "member";
   const projectInfo = getStoredProjectInfo();
   const projectName = projectInfo?.name || "Unknown Project";
+  const projectId = projectInfo?.id;
 
   const isSuperAdmin =
     role === "admin" && projectName.toLowerCase() === "admin";
@@ -126,11 +127,15 @@ export default function SwiftDashboard() {
 
           //  Lấy activity thật cho project member/admin
           const logs = await activityLogger();
+          const projectLogs = logs.filter(
+          (log) => log.projectId === projectId
+        );
         
-        const formattedLogs = logs
+        const formattedLogs = projectLogs
           .slice(0, 5) // Giới hạn 5 logs gần nhất
           .map((log, index) => ({
             id: index + 1,
+            projectId: log.project.id,
             type: mapActionToType(log.action),
             user: log.username,
             file: log.details,
@@ -372,38 +377,45 @@ export default function SwiftDashboard() {
           </div>
 
           <div className="content-grid">
-            {/* Recent Activities */}
-            <div className="content-card">
-              <div className="card-header">
-                <h2>Recent Activities</h2>
-              </div>
-              <div className="card-body">
-                <div className="activities-list">
-                  {recentActivities.map((activity) => (
-                    <div key={activity.id} className="activity-item">
-                      <div className="activity-icon-wrapper">
-                        {getActivityIcon(activity.type)}
-                      </div>
-                      <div className="activity-details">
-                        <p className="activity-file">{activity.file}</p>
-                        <p className="activity-user">{activity.user}</p>
-                      </div>
-                      <div className="activity-meta">
-                        <p className="activity-size">{activity.size}</p>
-                        <p className="activity-time">{activity.time}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+  {/* Recent Activities */}
+  <div className="content-card">
+    <div className="card-header">
+      <h2>
+        {projectName
+          ? `Recent Activities - ${projectName}`
+          : "Recent Activities"}
+      </h2>
+    </div>
 
-              <div>
-                <Link to="/activity-logs" className="dropdown-item">
-                  <span>See more...</span>
-                </Link>
+    <div className="card-body">
+      <div className="activities-list">
+        {recentActivities
+          .map((activity) => (
+            <div key={activity.id} className="activity-item">
+              <div className="activity-icon-wrapper">
+                {getActivityIcon(activity.type)}
+              </div>
+              <div className="activity-details">
+                <p className="activity-file">{activity.file}</p>
+                <p className="activity-user">{activity.user}</p>
+              </div>
+              <div className="activity-meta">
+                <p className="activity-size">{activity.size}</p>
+                <p className="activity-time">{activity.time}</p>
               </div>
             </div>
-          </div>
+          ))}
+      </div>
+    </div>
+
+    <div>
+      <Link to="/activity-logs" className="dropdown-item">
+        <span>See more...</span>
+      </Link>
+    </div>
+  </div>
+</div>
+
         </div>
       )}
     </div>
