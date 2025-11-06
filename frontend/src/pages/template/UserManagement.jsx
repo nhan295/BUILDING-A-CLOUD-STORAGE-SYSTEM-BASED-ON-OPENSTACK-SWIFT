@@ -175,7 +175,6 @@ export default function UserManagement() {
     return matchesSearch && matchesProject;
   });
 
-  
   const handleCreateUser = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -183,7 +182,6 @@ export default function UserManagement() {
       alert("Please fill in all required fields.");
       return;
     }
-    
 
     try {
       const response = await createUser(newUser.username, newUser.password);
@@ -206,7 +204,7 @@ export default function UserManagement() {
       console.error("Error while creating user:", error);
       alert("An error occurred while creating the user.");
     } finally {
-      setLoading(false)
+      setLoading(false);
       setShowCreateModal(false);
       setNewUser({ username: "", password: "" });
     }
@@ -215,14 +213,53 @@ export default function UserManagement() {
   const handleAssigntoProject = async (e) => {
     e.preventDefault();
     setLoading(true);
+
     // Kiểm tra chọn project
     if (!assignData.projectId || !assignData.projectName) {
       alert("Please select a project.");
+      setLoading(false);
       return;
     }
 
     try {
-      // Gọi API để gán user vào project
+      // Kiểm tra xem user đã được assign vào project này chưa
+      const existingProject = selectedUser.projects?.find(
+        (p) => p.id === assignData.projectId
+      );
+
+      if (existingProject) {
+        // Kiểm tra xem role đã tồn tại chưa
+        if (existingProject.roles?.includes(assignData.role)) {
+          // Role đã tồn tại - gọi API nhưng chỉ thông báo
+          const response = await assignUsertoProject(
+            assignData.projectId,
+            selectedUser.userId,
+            assignData.role
+          );
+
+          if (response?.success) {
+            alert(
+              `User "${selectedUser.username}" has been assigned to project "${assignData.projectName}" as ${assignData.role}.`
+            );
+          } else {
+            alert(response?.message || "Failed to assign user to project.");
+          }
+        } else {
+          // User đã có role khác trong project này
+          alert(
+            `Cannot assign additional role. User "${selectedUser.username}" already has role(s) in project "${assignData.projectName}".`
+          );
+        }
+
+        // Reset modal và dữ liệu
+        setShowAssignModal(false);
+        setAssignData({ projectId: "", projectName: "", role: "member" });
+        setSelectedUser(null);
+        setLoading(false);
+        return;
+      }
+
+      // User chưa có trong project - gán mới
       const response = await assignUsertoProject(
         assignData.projectId,
         selectedUser.userId,
@@ -260,12 +297,12 @@ export default function UserManagement() {
         setAssignData({ projectId: "", projectName: "", role: "member" });
         setSelectedUser(null);
       } else {
-        alert("Failed to assign user to project.");
+        alert(response?.message || "Failed to assign user to project.");
       }
     } catch (error) {
       console.error("Error in handleAssignToProject:", error);
       alert("An error occurred while assigning the user.");
-    }finally {
+    } finally {
       setLoading(false);
     }
   };
@@ -520,10 +557,10 @@ export default function UserManagement() {
                   >
                     Cancel
                   </button>
-                  <button 
-                  type="submit" 
-                  className="um-btn-submit"
-                  disabled={loading}
+                  <button
+                    type="submit"
+                    className="um-btn-submit"
+                    disabled={loading}
                   >
                     {loading ? "Creating..." : "Create"}
                   </button>
@@ -537,8 +574,8 @@ export default function UserManagement() {
         {showAssignModal && selectedUser && (
           <div
             className="um-modal-overlay"
-            onClick={() => setShowAssignModal(false)}>
-          
+            onClick={() => setShowAssignModal(false)}
+          >
             <div
               className="um-modal-content"
               onClick={(e) => e.stopPropagation()}
@@ -606,10 +643,11 @@ export default function UserManagement() {
                   >
                     Cancel
                   </button>
-                  <button 
-                  type="submit"
-                  className="um-btn-submit"
-                  disabled={loading}>
+                  <button
+                    type="submit"
+                    className="um-btn-submit"
+                    disabled={loading}
+                  >
                     {loading ? "Assigning..." : "Assign"}
                   </button>
                 </div>

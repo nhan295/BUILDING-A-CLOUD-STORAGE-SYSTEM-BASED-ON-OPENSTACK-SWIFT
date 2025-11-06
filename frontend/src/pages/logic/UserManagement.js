@@ -54,23 +54,28 @@ export const deleteUser = async(userId)=>{
     }
 }
 
-export const assignUsertoProject = async(project_id, user_id,role_name)=>{
-    try{
-        const response = await api.post('/api/users/assign',{
-            project_id,
-            user_id,
-            role_name
-        })
-        if(response.data.success){
-            return{
-                success: true,
-                message: response.data.message
-            }
-        }
-    }catch(error){
-        console.error('Error while assign user to project', error);
-    }
-}
+export const assignUsertoProject = async (project_id, user_id, role_name) => {
+  try {
+    const response = await api.post('/api/users/assign', {
+      project_id,
+      user_id,
+      role_name
+    });
+
+    return {
+      success: response?.data?.success || false,
+      message: response?.data?.message || 'Failed to assign user to project.'
+    };
+
+  } catch (error) {
+    console.error('Error while assign user to project:', error.response?.data || error.message);
+
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to assign user to project.'
+    };
+  }
+};
 
 export const removeUserfromProject = async(userId,projectId)=>{
     try{
