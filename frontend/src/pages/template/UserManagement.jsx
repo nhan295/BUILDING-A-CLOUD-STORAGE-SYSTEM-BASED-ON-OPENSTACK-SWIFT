@@ -244,7 +244,7 @@ export default function UserManagement() {
           }
         } else {
           // User đã có role khác trong project này
-          toast.info(
+          toast.error(
             `Cannot assign additional role. User "${selectedUser.username}" already has role(s) in project "${assignData.projectName}".`
           );
         }
