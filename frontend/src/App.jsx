@@ -9,9 +9,22 @@ import ProjectManagement from './pages/template/ProjectManagement.jsx'
 import ObjectManagement from './pages/template/ObjectManagement.jsx'
 import Profile from './pages/template/Profile.jsx'
 import ActivityLogs from './pages/template/ActivityLogs.jsx'
+import { ToastContainer } from "react-toastify";
+
 function App() {
 
   return (
+    <>
+    <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        pauseOnHover
+        draggable
+        theme="colored"
+      />
    <Routes>
       <Route path="/" element={<Login />} />
 
@@ -28,6 +41,7 @@ function App() {
 
       
    </Routes>
+  </>
   )
 }
 

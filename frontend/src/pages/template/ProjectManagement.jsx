@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { FolderKanban, Plus, Settings, Users, HardDrive, Search, X, Trash2 } from 'lucide-react';
+import { toast } from "react-toastify";
 import '../style/ProjectManagement.css';
 import { getProjects, createProject, deleteProject, updateQuota } from '../logic/ProjectManagement.js';
 
@@ -67,14 +68,14 @@ export default function ProjectManager() {
       const quota_bytes = newProject.quota * 1024 * 1024 * 1024; // GB → bytes
 
       if (!projectName) {
-        alert("Project name cannot be empty!");
+        toast.error("Project name cannot be empty!");
         return;
       }
 
       const res = await createProject(projectName, quota_bytes, description);
 
       if (res.success) {
-        alert("Project created successfully!");
+        toast.success("Project created successfully!");
         setShowCreateModal(false);
         setNewProject({ name: '', description: '', quota: 100 });
 
@@ -90,11 +91,11 @@ export default function ProjectManager() {
         };
         setProjects(prev => [...prev, newProj]);
       } else {
-        alert(res.message || "Failed to create project");
+        toast.error(res.message || "Failed to create project");
       }
     } catch (error) {
       console.error("Error creating project:", error);
-      alert("An error occurred while creating the project.");
+      toast.error("An error occurred while creating the project.");
     }finally{
       setLoading (false);
     }
@@ -107,7 +108,7 @@ export default function ProjectManager() {
     try {
       const response = await updateQuota(selectedProject.id, quota_bytes);
       if (response.success) {
-        alert('Quota updated successfully!');
+        toast.success('Quota updated successfully!');
         setProjects(projects.map(p =>
           p.id === selectedProject.id
             ? { ...p, quota: quota_bytes }
@@ -116,10 +117,10 @@ export default function ProjectManager() {
         setShowQuotaModal(false);
         setSelectedProject(null);
       } else {
-        alert('Failed to update quota: ' + response.message);
+        toast.error('Failed to update quota: ' + response.message);
       }
     } catch (error) {
-      alert('An error occurred while updating quota: ', error);
+      toast.error('An error occurred while updating quota: ', error);
     }
   };
 
@@ -129,14 +130,14 @@ export default function ProjectManager() {
     try {
       const res = await deleteProject(projectId);
       if (res && res.success) {
-        alert('Project deleted successfully!');
+        toast.success('Project deleted successfully!');
         setProjects(projects.filter(p => p.id !== projectId));
       } else {
-        alert('Failed to delete project.');
+        toast.error('Failed to delete project.');
       }
     } catch (error) {
       console.error('Error deleting project:', error);
-      alert('An error occurred while deleting the project.');
+      toast.error('An error occurred while deleting the project.');
     }
   };
 

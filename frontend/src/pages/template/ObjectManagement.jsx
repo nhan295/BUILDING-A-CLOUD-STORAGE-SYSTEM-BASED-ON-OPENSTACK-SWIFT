@@ -4,7 +4,7 @@ import { Upload, Trash2, Search, FolderOpen, Download, Eye, X } from 'lucide-rea
 import '../style/ObjectManagement.css';
 import { getObject, uploadFile, deleteObject, downloadObject } from '../logic/ObjectManagement.js';
 import { getStoredRoles } from "../../pages/logic/Login";
-
+import { toast } from "react-toastify";
 export default function ObjectManagement() {
   const [objects, setObjects] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -31,7 +31,7 @@ export default function ObjectManagement() {
         }));
         setObjects(list);
       } catch (error) {
-        console.error('❌ Failed to fetch objects:', error);
+        console.error('Failed to fetch objects:', error);
       }
     };
     fetchObjects();
@@ -49,7 +49,7 @@ export default function ObjectManagement() {
       const response = await uploadFile(containerName, file, setUploadProgress);
 
       if (response.success) {
-        alert('File uploaded successfully!');
+        toast.success('File uploaded successfully!');
         setIsUploading(false);
         setUploadProgress(0);
       } else {
@@ -61,14 +61,14 @@ export default function ObjectManagement() {
             setUploadProgress(0);
             const replaceRes = await uploadFile(containerName, file, setUploadProgress, true);
             if (replaceRes.success) {
-              alert('File overwritten successfully!');
+              toast.success('File overwritten successfully!');
             } else {
-              alert('Overwrite failed: ' + replaceRes.message);
+              toast.error('Overwrite failed: ' + replaceRes.message);
             }
           }
           setIsUploading(false);
         } else {
-          alert('Upload failed: ' + response.message);
+          toast.error('Upload failed: ' + response.message);
           setIsUploading(false);
         }
       }
@@ -85,7 +85,7 @@ export default function ObjectManagement() {
       setObjects(updatedList);
     } catch (error) {
       console.error('Error while uploading file:', error);
-      alert('Upload failed.');
+      toast.error('Upload failed.');
       setIsUploading(false);
     }
   };
@@ -95,14 +95,14 @@ export default function ObjectManagement() {
     try {
       const response = await deleteObject(containerName, objectName);
       if (response?.success) {
-        alert(`File "${objectName}" deleted successfully!`);
+        toast.success(`File "${objectName}" deleted successfully!`);
         setObjects(objects.filter(o => o.name !== objectName));
       } else {
-        alert(`Delete failed: ${response?.message || "Unknown error"}`);
+        toast.error(`Delete failed: ${response?.message || "Unknown error"}`);
       }
     } catch (error) {
       console.error("Error deleting file:", error);
-      alert("An error occurred while deleting the file!");
+      toast.error("An error occurred while deleting the file!");
     }
   };
 
@@ -112,7 +112,7 @@ export default function ObjectManagement() {
       console.log(`Downloading file: ${objectName}`);
     } catch (error) {
       console.error("Error while downloading container:", error);
-      alert("Failed to download container!");
+      toast.error("Failed to download container!");
     }
   };
 

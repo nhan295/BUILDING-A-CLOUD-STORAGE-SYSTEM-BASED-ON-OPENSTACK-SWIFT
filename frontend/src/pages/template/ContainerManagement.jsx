@@ -9,6 +9,7 @@ import {
   Upload,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import "../style/ContainerManagement.css";
 import { getStoredRoles } from "../../pages/logic/Login";
 import {
@@ -97,7 +98,7 @@ export default function SwiftContainerList() {
   //  Upload file
   const handleUploadFile = async () => {
     if (!selectedFile || !uploadingContainer) {
-      alert("Please select a file to upload.");
+      toast.warn("Please select a file to upload.");
       return;
     }
 
@@ -113,7 +114,7 @@ export default function SwiftContainerList() {
       );
 
       if (result.success) {
-        alert(`File "${selectedFile.name}" uploaded successfully!`);
+        toast.success(`File "${selectedFile.name}" uploaded successfully!`);
       } else {
         // If server reports file already exists
         if (result.message.includes("already exists")) {
@@ -130,15 +131,15 @@ export default function SwiftContainerList() {
               true
             );
             if (retry.success) {
-              alert(`File "${selectedFile.name}" overwritten successfully!`);
+              toast.success(`File "${selectedFile.name}" overwritten successfully!`);
             } else {
-              alert(`Upload failed: ${retry.message}`);
+              toast.error(`Upload failed: ${retry.message}`);
             }
           } else {
-            alert("Overwrite canceled.");
+            toast.info("Overwrite canceled.");
           }
         } else {
-          alert(`Upload failed: ${result.message}`);
+          toast.error(`Upload failed: ${result.message}`);
         }
       }
 
@@ -158,7 +159,7 @@ export default function SwiftContainerList() {
       setUploadingContainer(null);
     } catch (error) {
       console.error("Upload error:", error);
-      alert("An error occurred during file upload!");
+      toast.error("An error occurred during file upload!");
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
@@ -187,46 +188,46 @@ export default function SwiftContainerList() {
   };
 
   const handleCreateContainer = async () => {
-    const name = newContainerName.trim();
-    if (!name) {
-      alert("Please enter a container name.");
-      return;
-    }
+  const name = newContainerName.trim();
+  if (!name) {
+    toast.error("Please enter a container name.");
+    return;
+  }
 
-    if (containers.some((c) => c.name === name)) {
-      alert(`Container "${name}" already exists.`);
-      setNewContainerName("");
-      setShowCreateModal(false);
-      return;
-    }
+  if (containers.some((c) => c.name === name)) {
+    toast.info(`Container "${name}" already exists.`);
+    setNewContainerName("");
+    setShowCreateModal(false);
+    return;
+  }
 
-    try {
-      setIsCreating(true); //  Khóa nút Create khi bắt đầu request
-      const res = await createContainer(name);
+  try {
+    setIsCreating(true); // Khóa nút Create khi bắt đầu request
+    const res = await createContainer(name);
 
-      if (res.success) {
-        const newContainer = {
-          name,
-          object: 0,
-          bytes: 0,
-          lastModified: new Date().toISOString().split("T")[0],
-        };
-        setContainers((prev) => [...prev, newContainer]);
-        alert(`Container "${name}" created successfully!`);
-      } else if (res.message?.toLowerCase().includes("exists")) {
-        alert(`Container "${name}" already exists.`);
-      } else {
-        alert(`Failed to create container: ${res.message || "Unknown error"}`);
-      }
-    } catch (error) {
-      console.error("Error creating container:", error);
-      alert("Failed to create container. Please try again.");
-    } finally {
-      setIsCreating(false); // ✅ Mở lại nút sau khi hoàn tất
-      setNewContainerName("");
-      setShowCreateModal(false);
+    if (res.success) {
+      const newContainer = {
+        name,
+        object: 0,
+        bytes: 0,
+        lastModified: new Date().toISOString().split("T")[0],
+      };
+      setContainers((prev) => [...prev, newContainer]);
+      toast.success(`Container "${name}" created successfully!`);
+    } else if (res.message?.toLowerCase().includes("exists")) {
+      toast.info(`Container "${name}" already exists.`);
+    } else {
+      toast.error(`Failed to create container: ${res.message || "Unknown error"}`);
     }
-  };
+  } catch (error) {
+    console.error("Error creating container:", error);
+    toast.error("Failed to create container. Please try again.");
+  } finally {
+    setIsCreating(false); // Mở lại nút sau khi hoàn tất
+    setNewContainerName("");
+    setShowCreateModal(false);
+  }
+};
 
   //  Delete single container
   const handleDeleteContainer = async (containerName) => {
@@ -239,14 +240,14 @@ export default function SwiftContainerList() {
     try {
       const response = await delContainer(containerName);
       if (response?.success) {
-        alert(`Container "${containerName}" deleted successfully!`);
+        toast.success(`Container "${containerName}" deleted successfully!`);
         setContainers(containers.filter((c) => c.name !== containerName));
       } else {
-        alert(`Delete failed: ${response?.message || "Unknown error"}`);
+        toast.error(`Delete failed: ${response?.message || "Unknown error"}`);
       }
     } catch (error) {
       console.error("Error deleting container:", error);
-      alert("An error occurred while deleting the container!");
+      toast.error("An error occurred while deleting the container!");
     }
   };
 
@@ -265,7 +266,7 @@ export default function SwiftContainerList() {
     const response = await delSelectedContainer(containerName);
 
     if (response?.success) {
-      alert(`Deleted ${selectedContainers.length} container(s) successfully!`);
+      toast.success(`Deleted ${selectedContainers.length} container(s) successfully!`);
 
       // Cập nhật lại danh sách containers trong UI
       setContainers((prev) =>
@@ -273,11 +274,11 @@ export default function SwiftContainerList() {
       );
       setSelectedContainers([]);
     } else {
-      alert(`Delete failed: ${response?.message || "Unknown error"}`);
+      toast.error(`Delete failed: ${response?.message || "Unknown error"}`);
     }
   } catch (error) {
     console.error("Error deleting selected containers:", error);
-    alert("An error occurred while deleting containers!");
+    toast.error("An error occurred while deleting containers!");
   }
 };
 
@@ -289,7 +290,7 @@ export default function SwiftContainerList() {
       console.log(`Downloading container: ${containerName}`);
     } catch (error) {
       console.error("Error downloading container:", error);
-      alert("Failed to download container!");
+      toast.error("Failed to download container!");
     }
   };
 

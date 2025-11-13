@@ -11,6 +11,7 @@ import {
   User,
   Shuffle,
 } from "lucide-react";
+import { toast } from "react-toastify";
 import {
   getUsers,
   getSysUsers,
@@ -83,9 +84,6 @@ export default function UserManagement() {
           getSysUsers(),
           getProjects(),
         ]);
-
-        console.log("=== DEBUG sysData ===", sysData);
-        console.log("=== DEBUG projects ===", projectRes);
 
         // Format projects
         let formattedProjects = [];
@@ -179,7 +177,7 @@ export default function UserManagement() {
     e.preventDefault();
     setLoading(true);
     if (!newUser.username || !newUser.password) {
-      alert("Please fill in all required fields.");
+      toast.error("Please fill in all required fields.");
       return;
     }
 
@@ -195,14 +193,14 @@ export default function UserManagement() {
         };
 
         setUsers((prev) => [...prev, createdUser]);
-        alert("User created successfully!");
+        toast.success("User created successfully!");
         await fetchData();
       } else {
-        alert(response?.message || "Unable to create user. Please try again.");
+        toast.error(response?.message || "Unable to create user. Please try again.");
       }
     } catch (error) {
       console.error("Error while creating user:", error);
-      alert("An error occurred while creating the user.");
+      toast.error("An error occurred while creating the user.");
     } finally {
       setLoading(false);
       setShowCreateModal(false);
@@ -216,7 +214,7 @@ export default function UserManagement() {
 
     // Kiểm tra chọn project
     if (!assignData.projectId || !assignData.projectName) {
-      alert("Please select a project.");
+      toast.info("Please select a project.");
       setLoading(false);
       return;
     }
@@ -238,15 +236,15 @@ export default function UserManagement() {
           );
 
           if (response?.success) {
-            alert(
+            toast.success(
               `User "${selectedUser.username}" has been assigned to project "${assignData.projectName}" as ${assignData.role}.`
             );
           } else {
-            alert(response?.message || "Failed to assign user to project.");
+            toast.error(response?.message || "Failed to assign user to project.");
           }
         } else {
           // User đã có role khác trong project này
-          alert(
+          toast.info(
             `Cannot assign additional role. User "${selectedUser.username}" already has role(s) in project "${assignData.projectName}".`
           );
         }
@@ -288,7 +286,7 @@ export default function UserManagement() {
 
         setUsers(updatedUsers);
 
-        alert(
+        toast.info(
           `User "${selectedUser.username}" has been assigned to project "${assignData.projectName}" as ${assignData.role}.`
         );
 
@@ -297,11 +295,11 @@ export default function UserManagement() {
         setAssignData({ projectId: "", projectName: "", role: "member" });
         setSelectedUser(null);
       } else {
-        alert(response?.message || "Failed to assign user to project.");
+        toast.error(response?.message || "Failed to assign user to project.");
       }
     } catch (error) {
       console.error("Error in handleAssignToProject:", error);
-      alert("An error occurred while assigning the user.");
+      toast.error("An error occurred while assigning the user.");
     } finally {
       setLoading(false);
     }
@@ -313,14 +311,14 @@ export default function UserManagement() {
     try {
       const res = await deleteUser(userId);
       if (res && res.success) {
-        alert("User deleted successfully!");
+        toast.success("User deleted successfully!");
         setUsers(users.filter((user) => user.userId !== userId));
       } else {
-        alert("Failed to delete user.");
+        toast.error("Failed to delete user.");
       }
     } catch (error) {
       console.error("Error while deleting user:", error);
-      alert("An error occurred while deleting the user.");
+      toast.error("An error occurred while deleting the user.");
     }
   };
 
@@ -335,14 +333,14 @@ export default function UserManagement() {
     try {
       const response = await removeUserfromProject(userId, projectId);
       if (response && response.success) {
-        alert("User removed from project successfully!");
+        toast.success("User removed from project successfully!");
         await fetchData(); // Refresh lại danh sách
       } else {
-        alert(response?.message || "Failed to remove user from project.");
+        toast.error(response?.message || "Failed to remove user from project.");
       }
     } catch (error) {
       console.error("Error while removing user from project:", error);
-      alert("An error occurred while removing the user from the project.");
+      toast.error("An error occurred while removing the user from the project.");
     }
   };
 
