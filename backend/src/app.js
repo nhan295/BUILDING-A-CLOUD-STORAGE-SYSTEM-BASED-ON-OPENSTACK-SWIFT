@@ -10,6 +10,7 @@ const accountRoutes = require('./routes/accountRoutes');
 const sysProjectRoutes = require('./routes/sysProjectRoutes');
 const sysUserRoutes = require('./routes/sysUserRoutes');
 const activityLogger = require('./routes/activityLoggerRoutes');
+const checkHealth = require('./routes/checkHealthRoutes');
 
 const app = express();
 app.use(
@@ -29,20 +30,12 @@ accountRoutes.setup(app);
 sysProjectRoutes.setup(app);
 sysUserRoutes.setup(app);
 activityLogger.setup(app);
+checkHealth.setup(app);
 
 app.use((req,res,next)=>{
     console.log(`${req.method} ${req.path}`);
     next();
 })
-
-//health check
-app.get('/api/health',(req,res)=>{
-    res.status(200).json({
-        success: true,
-        message: 'Server is running',
-        timestamp: new Date().toISOString()
-    })
-});
 
 
 app.use((req,res)=>{
