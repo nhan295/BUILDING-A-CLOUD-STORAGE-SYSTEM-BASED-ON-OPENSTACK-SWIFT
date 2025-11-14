@@ -3,9 +3,9 @@
 ## Tổng quan kiến trúc
 - **Proxy Node**: Chạy Swift Proxy Server và Keystone (xác thực)
 - **Storage Nodes**: 2 node lưu trữ dữ liệu với replication factor = 2
-
 ---
 
+![SYSTEM ARCHITECTURE](assets/image/sys_architec.png)
 ## PHẦN 1: CẤU HÌNH PROXY NODE
 
 ### 1. Cài đặt các gói cần thiết
