@@ -686,8 +686,3 @@ sudo systemctl status swift-object
 - **Database User**: keystone / KEYSTONE_PASS
 
 ---
-
-
----
-
-**Lưu ý**: Đây là hướng dẫn cho môi trường test/lab. Với môi trường production, cần thêm các biện pháp bảo mật như SSL/TLS, firewall rules, và backup strategies.
