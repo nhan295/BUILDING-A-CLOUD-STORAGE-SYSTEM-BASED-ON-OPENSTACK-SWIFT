@@ -5,7 +5,7 @@
 - **Storage Nodes**: 2 node lưu trữ dữ liệu với replication factor = 2
 ---
 
-![SYSTEM ARCHITECTURE](assets/image/sys_architec.png)
+![SYSTEM ARCHITECTURE](frontend/public/assets/image/sys_architec.png)
 ## PHẦN 1: CẤU HÌNH PROXY NODE
 
 ### 1. Cài đặt các gói cần thiết
