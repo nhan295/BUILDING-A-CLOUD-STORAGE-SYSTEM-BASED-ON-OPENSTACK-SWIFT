@@ -9,7 +9,7 @@ export default function ActivityLogs() {
   const [dateFilter, setDateFilter] = useState('all');
   const [actionFilter, setActionFilter] = useState('all');
 
-  // 📦 Lấy thông tin project hiện tại
+  //  Lấy thông tin project hiện tại
   const project = getStoredProjectInfo();
   const projectId = project?.id;
   const projectName = project?.name;
@@ -19,7 +19,7 @@ export default function ActivityLogs() {
       try {
         const logs = await activityLogger();
 
-        // ✅ Lọc log theo project hiện tại
+        //  Lọc log theo project hiện tại
         const projectLogs = logs.filter(
           (log) => log.projectId === projectId
         );
@@ -77,7 +77,7 @@ export default function ActivityLogs() {
   const applyFilters = (activities, dateF, actionF) => {
     let filtered = [...activities];
 
-    // 🗓️ Lọc theo ngày
+    //  Lọc theo ngày
     if (dateF !== 'all') {
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
