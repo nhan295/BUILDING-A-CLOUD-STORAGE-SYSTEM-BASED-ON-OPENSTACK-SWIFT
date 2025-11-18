@@ -24,7 +24,12 @@ export default function Header() {
 
   const username = user?.username || "Guest";
   const projectName = project?.name || "No Project";
-  const role = roles.includes("admin") ? "Admin" : "Member";
+  const role = roles.includes("admin")
+  ? "Admin"
+  : roles.includes("member")
+  ? "Member"
+  : "Reader";
+
 
   const profileRef = useRef(null);
   const navigate = useNavigate();

@@ -236,7 +236,7 @@ export default function UserManagement() {
           );
 
           if (response?.success) {
-            toast.success(
+            toast.info(
               `User "${selectedUser.username}" has been assigned to project "${assignData.projectName}" as ${assignData.role}.`
             );
           } else {
@@ -286,7 +286,7 @@ export default function UserManagement() {
 
         setUsers(updatedUsers);
 
-        toast.info(
+        toast.success(
           `User "${selectedUser.username}" has been assigned to project "${assignData.projectName}" as ${assignData.role}.`
         );
 
@@ -631,6 +631,7 @@ export default function UserManagement() {
                   >
                     <option value="admin">Admin</option>
                     <option value="member">Member</option>
+                    <option value="reader">Reader</option>
                   </select>
                 </div>
                 <div className="um-modal-actions">
