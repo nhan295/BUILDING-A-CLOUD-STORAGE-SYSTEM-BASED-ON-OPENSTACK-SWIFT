@@ -408,7 +408,75 @@ tr.fm-selected {
   background-color: #dbeafe !important;
 }
 
+/* Upload Progress Toast - Multi Files */
+.fm-upload-files-list {
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.fm-upload-file-item {
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #eee;
+}
+
+.fm-upload-file-item:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.fm-upload-file-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.fm-upload-file-name {
+  font-size: 13px;
+  color: #333;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-right: 8px;
+}
+
+.fm-upload-status {
+  font-size: 14px;
+  min-width: 20px;
+  text-align: center;
+}
+
+.fm-status-uploading {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.fm-status-success {
+  color: #10b981;
+}
+
+.fm-status-error {
+  color: #ef4444;
+}
+
+.fm-progress-bar.fm-progress-success {
+  background: linear-gradient(90deg, #10b981, #059669);
+}
+
+.fm-progress-bar.fm-progress-error {
+  background: linear-gradient(90deg, #ef4444, #dc2626);
+}
+
+
 /* Responsive Design */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
 @media (max-width: 768px) {
   .fm-container {
     padding: 16px;

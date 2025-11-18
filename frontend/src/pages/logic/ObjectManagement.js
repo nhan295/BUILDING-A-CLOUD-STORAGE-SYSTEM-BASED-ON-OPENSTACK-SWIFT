@@ -8,18 +8,18 @@ export const getObject = async(containerName)=>{
     }
 }
 
-export const uploadFile = async (container, file, setUploadProgress, replace = false) => {
+export const uploadFile = async (container, files, setUploadProgress, replace = false) => {
   try {
     const formData = new FormData();
-    formData.append("files", file);
+
+    for (const f of files) {
+      formData.append("files", f);
+    }
 
     const res = await api.post(
       `/api/object/${container}/upload?replace=${replace}`,
       formData,
       {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
         onUploadProgress: (event) => {
           if (setUploadProgress && event.total) {
             setUploadProgress(Math.round((event.loaded * 100) / event.total));
@@ -31,7 +31,6 @@ export const uploadFile = async (container, file, setUploadProgress, replace = f
     return { success: true, data: res.data };
   } catch (err) {
     console.error("Upload file error:", err);
-
     return {
       success: false,
       message:
@@ -42,6 +41,7 @@ export const uploadFile = async (container, file, setUploadProgress, replace = f
     };
   }
 };
+
 
 
 export const deleteObject = async (containerName, objectName) => {

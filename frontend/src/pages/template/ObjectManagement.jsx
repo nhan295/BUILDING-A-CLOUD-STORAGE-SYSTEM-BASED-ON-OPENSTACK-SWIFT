@@ -23,9 +23,8 @@ export default function ObjectManagement() {
   const [objects, setObjects] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
-  const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadFileName, setUploadFileName] = useState("");
+  const [uploadingFiles, setUploadingFiles] = useState([]);
   const [selectedObjects, setSelectedObjects] = useState([]); // Danh sách object được chọn
   const { containerName } = useParams();
 
@@ -56,60 +55,83 @@ export default function ObjectManagement() {
   }, [containerName]);
 
   const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
 
     try {
       setIsUploading(true);
-      setUploadFileName(file.name);
-      setUploadProgress(0);
+      
+      // Khởi tạo danh sách file đang upload
+      const fileList = files.map((file, index) => ({
+        id: `${Date.now()}-${index}`,
+        name: file.name,
+        progress: 0,
+        status: 'uploading' // uploading, success, error
+      }));
+      setUploadingFiles(fileList);
 
-      const response = await uploadFile(containerName, file, setUploadProgress);
+
+      // Giả lập progress cho từng file (vì backend có thể không hỗ trợ individual progress)
+      const progressInterval = setInterval(() => {
+        setUploadingFiles(prev => 
+          prev.map(file => {
+            if (file.status === 'uploading' && file.progress < 90) {
+              return { ...file, progress: Math.min(file.progress + 10, 90) };
+            }
+            return file;
+          })
+        );
+      }, 300);
+
+      const response = await uploadFile(containerName, files, () => {
+        // Callback cho progress nếu backend hỗ trợ
+      });
+
+      clearInterval(progressInterval);
+
+      // Cập nhật trạng thái hoàn thành
+      setUploadingFiles(prev =>
+        prev.map(file => ({
+          ...file,
+          progress: 100,
+          status: response.success ? 'success' : 'error'
+        }))
+      );
 
       if (response.success) {
-        toast.success("File uploaded successfully!");
-        setIsUploading(false);
-        setUploadProgress(0);
+        toast.success("Files uploaded successfully!");
+        // Đợi 1.5s để hiển thị success rồi mới đóng toast
+        setTimeout(() => {
+          setIsUploading(false);
+          setUploadingFiles([]);
+        }, 1500);
       } else {
-        if (response.message?.includes("already exists")) {
-          const confirmReplace = window.confirm(
-            `File "${file.name}" already exists in "${containerName}".\nDo you want to overwrite it?`
-          );
-          if (confirmReplace) {
-            setUploadProgress(0);
-            const replaceRes = await uploadFile(
-              containerName,
-              file,
-              setUploadProgress,
-              true
-            );
-            if (replaceRes.success) {
-              toast.success("File overwritten successfully!");
-            } else {
-              toast.error("Overwrite failed: " + replaceRes.message);
-            }
-          }
-          setIsUploading(false);
-        } else {
-          toast.error("Upload failed: " + response.message);
-          setIsUploading(false);
-        }
+        toast.error("Upload failed: " + response.message);
+        setIsUploading(false);
       }
 
+      // Reload danh sách files
       const updatedData = await getObject(containerName);
-      const updatedList = updatedData.map((obj, index) => ({
-        id: index + 1,
-        name: obj.name,
-        size: (obj.size / (1024 * 1024)).toFixed(2) + " MB",
-        upload_at: new Date(obj.upload_at).toISOString().split("T")[0],
-        type: obj.name.split(".").pop(),
-        owner: obj.upload_by || "unknown",
-      }));
-      setObjects(updatedList);
+      setObjects(
+        updatedData.map((obj, index) => ({
+          id: index + 1,
+          name: obj.name,
+          size: (obj.size / (1024 * 1024)).toFixed(2) + " MB",
+          upload_at: new Date(obj.upload_at).toISOString().split("T")[0],
+          type: obj.name.split(".").pop(),
+          owner: obj.upload_by || "unknown",
+        }))
+      );
     } catch (error) {
-      console.error("Error while uploading file:", error);
+      console.error("Error uploading files:", error);
       toast.error("Upload failed.");
-      setIsUploading(false);
+      setUploadingFiles(prev =>
+        prev.map(file => ({ ...file, status: 'error', progress: 100 }))
+      );
+      setTimeout(() => {
+        setIsUploading(false);
+        setUploadingFiles([]);
+      }, 2000);
     }
   };
 
@@ -277,23 +299,40 @@ export default function ObjectManagement() {
           <div className="fm-toast-header">
             <div className="fm-toast-title">
               <Upload size={16} />
-              <span>Uploading</span>
+              <span>Uploading {uploadingFiles.length} file(s)</span>
             </div>
             <button
               className="fm-toast-close"
-              onClick={() => setIsUploading(false)}
+              onClick={() => {
+                setIsUploading(false);
+                setUploadingFiles([]);
+              }}
             >
               <X size={16} />
             </button>
           </div>
-          <div className="fm-toast-filename">{uploadFileName}</div>
-          <div className="fm-progress-container">
-            <div
-              className="fm-progress-bar"
-              style={{ width: `${uploadProgress}%` }}
-            />
+          
+          <div className="fm-upload-files-list">
+            {uploadingFiles.map((file) => (
+              <div key={file.id} className="fm-upload-file-item">
+                <div className="fm-upload-file-info">
+                  <span className="fm-upload-file-name">{file.name}</span>
+                  <span className={`fm-upload-status fm-status-${file.status}`}>
+                    {file.status === 'uploading' && '⏳'}
+                    {file.status === 'success' && '✓'}
+                    {file.status === 'error' && '✗'}
+                  </span>
+                </div>
+                <div className="fm-progress-container">
+                  <div
+                    className={`fm-progress-bar fm-progress-${file.status}`}
+                    style={{ width: `${file.progress}%` }}
+                  />
+                </div>
+                <div className="fm-progress-text">{file.progress}%</div>
+              </div>
+            ))}
           </div>
-          <div className="fm-progress-text">{uploadProgress}%</div>
         </div>
       )}
 
