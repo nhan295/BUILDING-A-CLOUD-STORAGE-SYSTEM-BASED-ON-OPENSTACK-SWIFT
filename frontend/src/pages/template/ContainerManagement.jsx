@@ -18,7 +18,6 @@ import {
   uploadFile,
   delContainer,
   downloadContainer,
-  delSelectedContainer
 } from "../../pages/logic/ContainerManagement";
 
 export default function SwiftContainerList() {
@@ -37,6 +36,10 @@ export default function SwiftContainerList() {
 
   const roles = getStoredRoles() || [];
   const isAdmin = roles.includes("admin");
+  const isMember = roles.includes("member");
+  //const isReader = roles.includes("reader");
+
+  const isPrivileged = isAdmin || isMember; // Admins and Members have full access on containers
   const navigate = useNavigate();
 
   // 🔹 Load container list
@@ -252,7 +255,8 @@ export default function SwiftContainerList() {
   };
 
   // Delete multiple containers
-  const handleDeleteSelected = async () => {
+  // Delete multiple containers
+const handleDeleteSelected = async () => {
   if (
     !window.confirm(
       `Are you sure you want to delete ${selectedContainers.length} container(s)?`
@@ -261,21 +265,47 @@ export default function SwiftContainerList() {
     return;
 
   try {
-    // Gửi danh sách container cần xóa lên API
-    const containerName = selectedContainers.join(","); // nối thành chuỗi để gửi qua URL
-    const response = await delSelectedContainer(containerName);
+    let successCount = 0;
+    let failCount = 0;
 
-    if (response?.success) {
-      toast.success(`Deleted ${selectedContainers.length} container(s) successfully!`);
-
-      // Cập nhật lại danh sách containers trong UI
-      setContainers((prev) =>
-        prev.filter((c) => !selectedContainers.includes(c.name))
-      );
-      setSelectedContainers([]);
-    } else {
-      toast.error(`Delete failed: ${response?.message || "Unknown error"}`);
+    // Dùng vòng lặp để xóa từng container
+    for (const containerName of selectedContainers) {
+      try {
+        const response = await delContainer(containerName);
+        if (response?.success) {
+          successCount++;
+        } else {
+          failCount++;
+          console.error(`Failed to delete ${containerName}:`, response?.message);
+        }
+      } catch (error) {
+        failCount++;
+        console.error(`Error deleting ${containerName}:`, error);
+      }
     }
+
+    // Hiển thị thông báo kết quả
+    if (successCount > 0) {
+      toast.success(`Deleted ${successCount} container(s) successfully!`);
+    }
+    if (failCount > 0) {
+      toast.error(`Failed to delete ${failCount} container(s)!`);
+    }
+
+    // Cập nhật lại danh sách containers trong UI
+    // Chỉ loại bỏ những container đã xóa thành công
+    const data = await getContainers();
+    const list = data.map((item) => ({
+      name: item.name,
+      object: item.objects || 0,
+      bytes: item.bytes || 0,
+      lastModified: item.last_modified 
+        ? new Date(item.last_modified).toISOString().split("T")[0]
+        : "N/A",
+    }));
+    setContainers(list);
+    setSelectedContainers([]);
+
   } catch (error) {
     console.error("Error deleting selected containers:", error);
     toast.error("An error occurred while deleting containers!");
@@ -320,19 +350,21 @@ export default function SwiftContainerList() {
           />
         </div>
 
-        <div className="actions">
-          <button
-            className="btn btn-primary"
-            onClick={() => setShowCreateModal(true)}
-          >
-            <Plus size={18} />
-            Create Container
-          </button>
+         <div className="actions">
+          {(isPrivileged) && (
+            <button
+              className="btn btn-primary"
+              onClick={() => setShowCreateModal(true)}
+            >
+              <Plus size={18} />
+              Create Container
+            </button>
+          )}
           <button className="btn btn-secondary" onClick={handleRefresh}>
             <RefreshCw size={18} className={isLoading ? "rotating" : ""} />
             Refresh
           </button>
-          {selectedContainers.length > 0 && (
+          {(isPrivileged) && selectedContainers.length > 0 && (
             <button className="btn btn-danger" onClick={handleDeleteSelected}>
               <Trash2 size={18} />
               Delete ({selectedContainers.length})
@@ -370,7 +402,7 @@ export default function SwiftContainerList() {
         <table className="container-table">
           <thead>
             <tr>
-              {isAdmin && (
+              {isPrivileged && (
                 <th className="checkbox-col">
                   <input
                     type="checkbox"
@@ -396,7 +428,7 @@ export default function SwiftContainerList() {
                   selectedContainers.includes(container.name) ? "selected" : ""
                 }
               >
-                {isAdmin && (
+                {isPrivileged && (
                   <td className="checkbox-col">
                     <input
                       type="checkbox"
@@ -433,7 +465,7 @@ export default function SwiftContainerList() {
                     >
                       <Download size={16} />
                     </button>
-                    {isAdmin && (
+                    {isPrivileged && (
                       <button
                         className="icon-btn danger"
                         title="Delete"

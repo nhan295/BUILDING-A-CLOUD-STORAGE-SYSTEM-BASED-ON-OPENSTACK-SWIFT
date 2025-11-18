@@ -11,7 +11,7 @@ export const getObject = async(containerName)=>{
 export const uploadFile = async (container, file, setUploadProgress, replace = false) => {
   try {
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("files", file);
 
     const res = await api.post(
       `/api/object/${container}/upload?replace=${replace}`,

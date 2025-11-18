@@ -24,9 +24,8 @@ const getObject = async (req, res) => {
     // Duyệt qua từng object và gọi HEAD để lấy metadata
     const objects = await Promise.all(
       listResponse.data.map(async (obj) => {
-        const objectUrl = `${SWIFT_URL}/AUTH_${projectId}/${containerName}/${encodeURIComponent(
-          obj.name
-        )}`;
+        const objectUrl = `${SWIFT_URL}/AUTH_${projectId}/${containerName}/${obj.name}`;
+
 
         try {
           const headResponse = await axios.head(objectUrl, {
@@ -77,59 +76,82 @@ const newObject = async (req, res) => {
     const token = req.token;
     const projectId = req.project.id;
     const containerName = req.params.container;
-    const file = req.file;
-    const replace = req.query.replace === "true"; // override if exists
-    const upload_by = req.user?.username || 'unknown';
+    const files = req.files;
+    const replace = req.query.replace === "true";
+    const upload_by = req.user?.username || "unknown";
 
-    if (!file) {
+    if (!files || files.length === 0) {
       return res.status(400).json({
         success: false,
-        message: "File is required",
+        message: "No files uploaded",
       });
     }
 
-    const objectName = file.originalname;
-    const objectUrl = `${SWIFT_URL}/AUTH_${projectId}/${containerName}/${objectName}`;
+    const results = [];
 
-    // check if object exists
-    try {
-      await axios.head(objectUrl, {
-        headers: { "X-Auth-Token": token },
-      });
+    for (const file of files) {
+      const objectName = file.originalname;
+      const objectUrl = `${SWIFT_URL}/AUTH_${projectId}/${containerName}/${encodeURIComponent(objectName)}`;
 
-      if (!replace) {
-        return res.status(409).json({
+      // check if exists
+      try {
+        await axios.head(objectUrl, {
+          headers: { "X-Auth-Token": token },
+        });
+
+        if (!replace) {
+          results.push({
+            name: objectName,
+            success: false,
+            message: `File "${objectName}" already exists`,
+          });
+          continue;
+        }
+      } catch (headErr) {
+        if (headErr.response && headErr.response.status !== 404) {
+          throw headErr;
+        }
+      }
+
+      // upload
+      try {
+        const response = await axios.put(objectUrl, file.buffer, {
+          headers: {
+            "X-Auth-Token": token,
+            "Content-Type": file.mimetype || "application/octet-stream",
+            "X-Object-Meta-Uploaded-By": upload_by,
+            "X-Object-Meta-Upload-Time": new Date().toISOString(),
+          },
+        });
+
+        results.push({
+          name: objectName,
+          success: true,
+          etag: response.headers.etag,
+        });
+
+        const username = req.user?.username || req.project?.username || "unknown";
+        logActivity(
+          username,
+          "Upload",
+          `File ${objectName} uploaded to ${containerName}`,
+          projectId
+        );
+
+      } catch (upErr) {
+        results.push({
+          name: objectName,
           success: false,
-          message: `File "${objectName}" already exists in "${containerName}".`,
+          message: upErr.message,
         });
       }
-    } catch (headErr) {
-      // 404 => if not found, can upload
-      if (headErr.response && headErr.response.status !== 404) {
-        throw headErr; 
-      }
     }
 
-    // Upload (overide or create a new one)
-    const response = await axios.put(objectUrl, file.buffer, {
-      headers: {
-        "X-Auth-Token": token,
-        "Content-Type": file.mimetype || "application/octet-stream",
-        "X-Object-Meta-Uploaded-By": upload_by, 
-        "X-Object-Meta-Upload-Time": new Date().toISOString(),
-      },
-    });
-     const username = req.user?.username || req.project?.username || 'unknown';
-    logActivity(username, "Upload", `File ${objectName} upload to ${containerName}`,projectId);
-
-    return res.status(201).json({
+    return res.status(200).json({
       success: true,
-      message: `File "${objectName}" uploaded to "${containerName}" successfully.`,
-      etag: response.headers.etag,
-      metadata: {
-        uploaded_by: upload_by,
-        upload_time: new Date().toISOString(),
-      }
+      total: results.length,
+      container: containerName,
+      results,
     });
   } catch (error) {
     console.error("Upload object error:", error.message);
@@ -139,6 +161,7 @@ const newObject = async (req, res) => {
     });
   }
 };
+
 
 
 const delObject = async (req, res) => {
