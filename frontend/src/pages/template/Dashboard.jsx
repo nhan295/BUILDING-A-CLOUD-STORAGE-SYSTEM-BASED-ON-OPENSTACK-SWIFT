@@ -231,7 +231,7 @@ export default function SwiftDashboard() {
                 <p className="stat-label">Projects</p>
                 <p className="stat-value">{systemStats.totalProjects}</p>
                 <p className="stat-sublabel">
-                  {systemStats.activeProjects} active
+                   active
                 </p>
               </div>
               <div className="stat-icon purple">

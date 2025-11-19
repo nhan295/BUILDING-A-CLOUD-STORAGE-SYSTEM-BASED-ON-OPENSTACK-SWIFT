@@ -338,7 +338,7 @@ export default function ProjectManager() {
 
               {quotaEdit.quota * 1024 * 1024 * 1024 < selectedProject.used && (
                 <div className="pm-alert pm-alert-danger">
-                  <p className="pm-alert-text">⚠️ New quota is smaller than current usage!</p>
+                  <p className="pm-alert-text">New quota is smaller than current usage!</p>
                 </div>
               )}
             </div>

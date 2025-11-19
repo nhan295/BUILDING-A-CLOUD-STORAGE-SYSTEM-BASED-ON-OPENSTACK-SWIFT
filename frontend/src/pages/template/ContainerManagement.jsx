@@ -451,13 +451,16 @@ const handleDeleteSelected = async () => {
                 <td>{container.lastModified}</td>
                 <td>
                   <div className="action-buttons">
-                    <button
+                    {isPrivileged && (
+                       <button
                       className="icon-btn"
                       title="Upload"
                       onClick={() => handleOpenUploadModal(container.name)}
                     >
                       <Upload size={16} />
                     </button>
+                    )}
+                   
                     <button
                       className="icon-btn"
                       title="Download"
