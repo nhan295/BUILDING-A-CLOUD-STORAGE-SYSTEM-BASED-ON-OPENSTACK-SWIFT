@@ -121,6 +121,7 @@ export default function UserManagement() {
             else if (allRoles.includes("ResellerAdmin"))
               primaryRole = "reseller";
             else if (allRoles.includes("member")) primaryRole = "member";
+            else if (allRoles.includes("reader")) primaryRole = "reader";
 
             return {
               userId: u.id || index + 1,
