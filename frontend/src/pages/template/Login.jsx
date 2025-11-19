@@ -41,20 +41,55 @@ export default function LoginPage() {
   const handleLoginClick = async (e) => {
     e.preventDefault?.();
     setError('');
-    setLoading(true);
-
-    const result = await handleLogin(username, password, project, domain);
-
-    if (result.success) {
-      setUsername('');
-      setPassword('');
-      setProject('');
-      
-    } else {
-      setError(result.message);
+    
+    // Validate input fields
+    if (!username.trim()) {
+      setError('Username is required');
+      return;
+    }
+    
+    if (!password) {
+      setError('Password is required');
+      return;
+    }
+    
+    if (!project.trim()) {
+      setError('Project name is required');
+      return;
     }
 
-    setLoading(false);
+    setLoading(true);
+
+    try {
+      const result = await handleLogin(username, password, project, domain);
+
+      if (result.success) {
+        setUsername('');
+        setPassword('');
+        setProject('');
+        // Redirect or show success message
+      } else {
+        // Handle specific error cases
+        if (result.message.toLowerCase().includes('username')) {
+          setError('Invalid username. Please check and try again.');
+        } else if (result.message.toLowerCase().includes('password')) {
+          setError('Incorrect password. Please try again.');
+        } else if (result.message.toLowerCase().includes('project')) {
+          setError('Project not found. Please verify the project name.');
+        } else if (result.message.toLowerCase().includes('network') || result.message.toLowerCase().includes('connection')) {
+          setError('Network error. Please check your connection and try again.');
+        } else if (result.message.toLowerCase().includes('timeout')) {
+          setError('Request timeout. Please try again.');
+        } else {
+          setError(result.message || 'Authentication failed. Please check your credentials.');
+        }
+      }
+    } catch (err) {
+      setError('An unexpected error occurred. Please try again later.');
+      console.error('Login error:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
