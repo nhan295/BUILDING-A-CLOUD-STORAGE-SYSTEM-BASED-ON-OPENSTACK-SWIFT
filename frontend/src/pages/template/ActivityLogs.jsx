@@ -149,7 +149,7 @@ export default function ActivityLogs() {
                 <option value="download">Download</option>
                 <option value="delete">Delete</option>
                 <option value="create">Create</option>
-                <option value="other">Other</option>
+                
               </select>
             </div>
           </div>

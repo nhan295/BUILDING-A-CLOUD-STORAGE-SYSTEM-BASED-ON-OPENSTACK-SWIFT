@@ -22,6 +22,9 @@ export default function ProjectManager() {
     quota: 0
   });
 
+  // Hằng số giới hạn tổng quota (GB)
+  const MAX_TOTAL_QUOTA_GB = 50;
+
   useEffect(() => {
     const fetchProjects = async () => {
       try {
@@ -60,8 +63,19 @@ export default function ProjectManager() {
     return (bytes / Math.pow(k, i)).toFixed(2) + ' ' + sizes[i];
   };
 
+  // Hàm tính tổng quota hiện tại
+  const getTotalQuotaGB = () => {
+    const totalBytes = projects.reduce((sum, p) => sum + p.quota, 0);
+    return totalBytes / (1024 * 1024 * 1024);
+  };
+
+  // Hàm tính quota khả dụng
+  const getAvailableQuotaGB = () => {
+    return MAX_TOTAL_QUOTA_GB - getTotalQuotaGB();
+  };
+
   const handleCreateProject = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
       const projectName = newProject.name.trim();
       const description = newProject.description.trim();
@@ -69,6 +83,27 @@ export default function ProjectManager() {
 
       if (!projectName) {
         toast.error("Project name cannot be empty!");
+        setLoading(false);
+        return;
+      }
+
+      if (newProject.quota <= 0) {
+        toast.error("Quota must be greater than 0!");
+        setLoading(false);
+        return;
+      }
+
+      // Tính tổng quota hiện tại của tất cả projects
+      const totalCurrentQuotaGB = getTotalQuotaGB();
+      const newQuotaGB = newProject.quota;
+      const totalAfterCreate = totalCurrentQuotaGB + newQuotaGB;
+
+      // Kiểm tra nếu tổng quota vượt quá 50GB
+      if (totalAfterCreate > MAX_TOTAL_QUOTA_GB) {
+        toast.error(
+          `Cannot create project! Total quota would be ${totalAfterCreate.toFixed(2)}GB (maximum: ${MAX_TOTAL_QUOTA_GB}GB). Available: ${getAvailableQuotaGB().toFixed(2)}GB`
+        );
+        setLoading(false);
         return;
       }
 
@@ -77,7 +112,7 @@ export default function ProjectManager() {
       if (res.success) {
         toast.success("Project created successfully!");
         setShowCreateModal(false);
-        setNewProject({ name: '', description: '', quota: 100 });
+        setNewProject({ name: '', description: '', quota: 10 });
 
         const newProj = {
           id: res.project?.id || Date.now(),
@@ -96,14 +131,40 @@ export default function ProjectManager() {
     } catch (error) {
       console.error("Error creating project:", error);
       toast.error("An error occurred while creating the project.");
-    }finally{
-      setLoading (false);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleUpdateQuota = async () => {
     if (!selectedProject) return;
+    
+    setLoading(true);
     const quota_bytes = quotaEdit.quota * 1024 * 1024 * 1024;
+
+    if (quotaEdit.quota <= 0) {
+      toast.error("Quota must be greater than 0!");
+      setLoading(false);
+      return;
+    }
+
+    // Tính tổng quota của các project khác (không bao gồm project đang edit)
+    const otherProjectsQuota = projects
+      .filter(p => p.id !== selectedProject.id)
+      .reduce((sum, p) => sum + p.quota, 0);
+    
+    const otherProjectsQuotaGB = otherProjectsQuota / (1024 * 1024 * 1024);
+    const newQuotaGB = quotaEdit.quota;
+    const totalAfterUpdate = otherProjectsQuotaGB + newQuotaGB;
+
+    // Kiểm tra nếu tổng quota vượt quá 50GB
+    if (totalAfterUpdate > MAX_TOTAL_QUOTA_GB) {
+      toast.error(
+        `Cannot update quota! Total quota would be ${totalAfterUpdate.toFixed(2)}GB (maximum: ${MAX_TOTAL_QUOTA_GB}GB). Available: ${(MAX_TOTAL_QUOTA_GB - otherProjectsQuotaGB).toFixed(2)}GB`
+      );
+      setLoading(false);
+      return;
+    }
 
     try {
       const response = await updateQuota(selectedProject.id, quota_bytes);
@@ -120,7 +181,9 @@ export default function ProjectManager() {
         toast.error('Failed to update quota: ' + response.message);
       }
     } catch (error) {
-      toast.error('An error occurred while updating quota: ', error);
+      toast.error('An error occurred while updating quota: ' + error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -174,12 +237,16 @@ export default function ProjectManager() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <button 
-        onClick={() => setShowCreateModal(true)} 
-        className="pm-btn pm-btn-primary">
-          <Plus size={20} />
-          Create Project
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <button 
+            onClick={() => setShowCreateModal(true)} 
+            className="pm-btn pm-btn-primary"
+            disabled={getAvailableQuotaGB() <= 0}
+          >
+            <Plus size={20} />
+            Create Project
+          </button>
+        </div>
       </div>
 
       {/* Projects Grid */}
@@ -255,6 +322,17 @@ export default function ProjectManager() {
               </button>
             </div>
 
+            <div className="pm-info-box" style={{ marginBottom: '16px', backgroundColor: '#f0fdf4', border: '1px solid #86efac' }}>
+              <p className="pm-info-line">
+                Available Quota: <strong className="pm-info-value" style={{ color: '#10b981' }}>
+                  {getAvailableQuotaGB().toFixed(2)}GB
+                </strong>
+              </p>
+              <p className="pm-info-line" style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+                Total: {getTotalQuotaGB().toFixed(2)}GB / {MAX_TOTAL_QUOTA_GB}GB
+              </p>
+            </div>
+
             <div className="pm-modal-content">
               <div className="pm-input-group">
                 <label className="pm-input-label">Project Name *</label>
@@ -285,10 +363,22 @@ export default function ProjectManager() {
                   className="pm-text-input"
                   value={newProject.quota}
                   onChange={(e) => setNewProject({ ...newProject, quota: parseInt(e.target.value) || 0 })}
-                  placeholder="100"
+                  placeholder="10"
                   min="1"
+                  max={getAvailableQuotaGB()}
                 />
+                <small className="pm-input-hint">
+                  Maximum available: {getAvailableQuotaGB().toFixed(2)}GB
+                </small>
               </div>
+
+              {newProject.quota > getAvailableQuotaGB() && (
+                <div className="pm-alert pm-alert-danger">
+                  <p className="pm-alert-text">
+                    Quota exceeds available limit! Available: {getAvailableQuotaGB().toFixed(2)}GB
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="pm-modal-actions">
@@ -297,7 +387,7 @@ export default function ProjectManager() {
               </button>
               <button
                 onClick={handleCreateProject}
-                disabled={!newProject.name || !newProject.quota || loading}
+                disabled={!newProject.name || !newProject.quota || loading || newProject.quota > getAvailableQuotaGB()}
                 className="pm-btn pm-btn-primary"
               >
                 {loading ? "Creating..." : "Create"}
@@ -321,6 +411,15 @@ export default function ProjectManager() {
             <div className="pm-info-box">
               <p className="pm-info-line">Project: <strong className="pm-info-value">{selectedProject.name}</strong></p>
               <p className="pm-info-line">Used: <strong className="pm-info-value">{formatSize(selectedProject.used)}</strong></p>
+              <p className="pm-info-line">Current Quota: <strong className="pm-info-value">{(selectedProject.quota / (1024 * 1024 * 1024)).toFixed(2)}GB</strong></p>
+            </div>
+
+            <div className="pm-info-box" style={{ marginTop: '12px', backgroundColor: '#f0fdf4', border: '1px solid #86efac' }}>
+              <p className="pm-info-line">
+                Available Quota (excluding this project): <strong className="pm-info-value" style={{ color: '#10b981' }}>
+                  {(MAX_TOTAL_QUOTA_GB - (getTotalQuotaGB() - (selectedProject.quota / (1024 * 1024 * 1024)))).toFixed(2)}GB
+                </strong>
+              </p>
             </div>
 
             <div className="pm-modal-content">
@@ -341,6 +440,20 @@ export default function ProjectManager() {
                   <p className="pm-alert-text">New quota is smaller than current usage!</p>
                 </div>
               )}
+
+              {(() => {
+                const otherProjectsQuotaGB = projects
+                  .filter(p => p.id !== selectedProject.id)
+                  .reduce((sum, p) => sum + p.quota, 0) / (1024 * 1024 * 1024);
+                const totalAfter = otherProjectsQuotaGB + quotaEdit.quota;
+                return totalAfter > MAX_TOTAL_QUOTA_GB && (
+                  <div className="pm-alert pm-alert-danger">
+                    <p className="pm-alert-text">
+                      Total quota would be {totalAfter.toFixed(2)}GB (maximum: {MAX_TOTAL_QUOTA_GB}GB)!
+                    </p>
+                  </div>
+                );
+              })()}
             </div>
 
             <div className="pm-modal-actions">
