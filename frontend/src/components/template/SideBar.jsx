@@ -114,7 +114,7 @@ export default function SideBar() {
                   onClick={() => handleLinkClick('user-manager', '/user-manager')}
                 >
                   <Users size={18} />
-                  <span>Users Management</span>
+                  <span>Users List</span>
                 </button>
 
                 <button
@@ -124,8 +124,6 @@ export default function SideBar() {
                   <Clock size={18} />
                   <span>Activity Logs</span>
                 </button>
-
-
               </>
             )}
           </>

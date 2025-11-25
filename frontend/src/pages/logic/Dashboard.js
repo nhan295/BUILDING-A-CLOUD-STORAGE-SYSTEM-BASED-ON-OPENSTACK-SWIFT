@@ -24,6 +24,7 @@ export const totalProjectUser = async()=> {
     try {
         const response = await api.get('/api/users/project-users');
         return response.data.total_users || 0;
+        
     } catch (error) {
         console.error('Error while fetching project users:', error);
         return 0;
@@ -62,3 +63,16 @@ export const activityLogger = async()=>{
         console.error("Failed to fetch recent activities:", error.message);
     }
 }
+
+export const getSysUsers = async () => {
+  try {
+    const response = await api.get('/api/users/');
+
+    // Lấy total_users đúng chuẩn
+    return response?.data?.total_users || 0;
+
+  } catch (error) {
+    console.error("Error fetching system users:", error);
+    return 0;
+  }
+};

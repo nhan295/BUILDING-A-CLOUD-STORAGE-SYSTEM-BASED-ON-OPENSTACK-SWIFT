@@ -45,7 +45,7 @@ export default function ActivityLogs() {
     if (projectId) fetchData();
   }, [projectId]);
 
-  // 🔄 Cập nhật khi filter thay đổi
+  //  Cập nhật khi filter thay đổi
   useEffect(() => {
     applyFilters(recentActivities, dateFilter, actionFilter);
   }, [dateFilter, actionFilter]);
@@ -105,7 +105,7 @@ export default function ActivityLogs() {
       });
     }
 
-    // ⚙️ Lọc theo hành động
+    //  Lọc theo hành động
     if (actionF !== 'all') {
       filtered = filtered.filter((activity) => activity.type === actionF);
     }
@@ -146,7 +146,6 @@ export default function ActivityLogs() {
               >
                 <option value="all">All Actions</option>
                 <option value="upload">Upload</option>
-                <option value="download">Download</option>
                 <option value="delete">Delete</option>
                 <option value="create">Create</option>
                 

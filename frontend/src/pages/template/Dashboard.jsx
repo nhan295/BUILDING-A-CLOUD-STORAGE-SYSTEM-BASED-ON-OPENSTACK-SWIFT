@@ -21,6 +21,7 @@ import {
   projectSize,
   getSysProjects,
   activityLogger,
+  getSysUsers
 } from "../../pages/logic/Dashboard";
 
 export default function SwiftDashboard() {
@@ -56,53 +57,53 @@ export default function SwiftDashboard() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        if (isSuperAdmin) {
-          const sysData = await getSysProjects();
-          const projects = Array.isArray(sysData?.projects)
-            ? sysData.projects
-            : [];
+      if (isSuperAdmin) {
+        const sysData = await getSysProjects();
+        const projects = Array.isArray(sysData?.projects)
+          ? sysData.projects
+          : [];
 
-          const totalProjects =
-            typeof sysData?.total === "number"
-              ? sysData.total
-              : projects.length;
-          const totalUsers = projects.reduce(
-            (sum, p) => sum + (Number(p.user_count) || 0),
-            0
-          );
-          const totalUsedBytes = projects.reduce(
-            (sum, p) => sum + (Number(p.swift_quota?.bytes_used) || 0),
-            0
-          );
+        const totalProjects =
+          typeof sysData?.total === "number"
+            ? sysData.total
+            : projects.length;
 
-          setSystemStats((prev) => ({
-            ...prev,
-            totalProjects,
-            totalUsers,
-            usedStorage: totalUsedBytes,
-            totalStorage: 50 * 1024 * 1024 * 1024, // assume 50GB total
+        // Lấy tổng số unique users từ API
+        const totalUsers = await getSysUsers();
+
+        const totalUsedBytes = projects.reduce(
+          (sum, p) => sum + (Number(p.swift_quota?.bytes_used) || 0),
+          0
+        );
+
+        setSystemStats((prev) => ({
+          ...prev,
+          totalProjects,
+          totalUsers, // ← Số users đã deduplicate
+          usedStorage: totalUsedBytes,
+          totalStorage: 50 * 1024 * 1024 * 1024,
+        }));
+
+        if (projects.length > 0) {
+          const formatted = projects.map((p) => ({
+            id: p.id,
+            name: p.name,
+            storage: Number(p.swift_quota?.bytes_used) || 0,
+            containers: p.swift_quota?.container_count || 0,
+            users: p.user_count || 0, // Vẫn hiển thị user_count cho mỗi project
+            quota:
+              p.swift_quota?.quota_bytes === "unlimited"
+                ? Infinity
+                : Number(p.swift_quota?.quota_bytes || 0),
           }));
 
-          if (projects.length > 0) {
-            const formatted = projects.map((p) => ({
-              id: p.id,
-              name: p.name,
-              storage: Number(p.swift_quota?.bytes_used) || 0,
-              containers: p.swift_quota?.container_count || 0,
-              users: p.user_count || 0,
-              quota:
-                p.swift_quota?.quota_bytes === "unlimited"
-                  ? Infinity
-                  : Number(p.swift_quota?.quota_bytes || 0),
-            }));
-
-            const top = formatted
-              .sort((a, b) => b.storage - a.storage)
-              .slice(0, 5);
-            setTopProjects(top);
-          } else {
-            setTopProjects([]);
-          }
+          const top = formatted
+            .sort((a, b) => b.storage - a.storage)
+            .slice(0, 5);
+          setTopProjects(top);
+        } else {
+          setTopProjects([]);
+        }
         } else {
           const containersData = await totalContainer();
           const totalContainers = containersData.length;
@@ -115,6 +116,7 @@ export default function SwiftDashboard() {
             0
           );
           const totalUsers = await totalProjectUser();
+          
           const { quota_bytes } = await projectSize();
 
           setStats({
