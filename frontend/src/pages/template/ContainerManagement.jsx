@@ -6,7 +6,6 @@ import {
   FolderOpen,
   RefreshCw,
   Download,
-  Upload,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -15,7 +14,6 @@ import { getStoredRoles } from "../../pages/logic/Login";
 import {
   getContainers,
   createContainer,
-  uploadFile,
   delContainer,
   downloadContainer,
 } from "../../pages/logic/ContainerManagement";
@@ -27,19 +25,13 @@ export default function SwiftContainerList() {
   const [isLoading, setIsLoading] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newContainerName, setNewContainerName] = useState("");
-  const [showUploadModal, setShowUploadModal] = useState(false);
-  const [uploadingContainer, setUploadingContainer] = useState(null);
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [isUploading, setIsUploading] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
 
   const roles = getStoredRoles() || [];
   const isAdmin = roles.includes("admin");
   const isMember = roles.includes("member");
-  //const isReader = roles.includes("reader");
 
-  const isPrivileged = isAdmin || isMember; // Admins and Members have full access on containers
+  const isPrivileged = isAdmin || isMember;
   const navigate = useNavigate();
 
   // 🔹 Load container list
@@ -77,7 +69,7 @@ export default function SwiftContainerList() {
     fetchContainer();
   }, []);
 
-  //  Format bytes into readable units
+  // Format bytes into readable units
   const formatBytes = (bytes) => {
     if (bytes === 0) return "0 Bytes";
     const k = 1024;
@@ -86,88 +78,12 @@ export default function SwiftContainerList() {
     return (bytes / Math.pow(k, i)).toFixed(2) + " " + sizes[i];
   };
 
-  //  Filter containers by name
+  // Filter containers by name
   const filteredContainers = containers.filter(
     (container) =>
       container.name &&
       container.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  const handleOpenUploadModal = (containerName) => {
-    setUploadingContainer(containerName);
-    setShowUploadModal(true);
-  };
-
-  //  Upload file
-  const handleUploadFile = async () => {
-    if (!selectedFile || !uploadingContainer) {
-      toast.warn("Please select a file to upload.");
-      return;
-    }
-
-    setIsUploading(true);
-    setUploadProgress(0);
-
-    try {
-      // First upload attempt (no overwrite)
-      const result = await uploadFile(
-        uploadingContainer,
-        selectedFile,
-        setUploadProgress
-      );
-
-      if (result.success) {
-        toast.success(`File "${selectedFile.name}" uploaded successfully!`);
-      } else {
-        // If server reports file already exists
-        if (result.message.includes("already exists")) {
-          const confirmReplace = window.confirm(
-            `File "${selectedFile.name}" already exists in container "${uploadingContainer}".\nDo you want to overwrite it?`
-          );
-
-          if (confirmReplace) {
-            // Retry upload with replace=true
-            const retry = await uploadFile(
-              uploadingContainer,
-              selectedFile,
-              setUploadProgress,
-              true
-            );
-            if (retry.success) {
-              toast.success(`File "${selectedFile.name}" overwritten successfully!`);
-            } else {
-              toast.error(`Upload failed: ${retry.message}`);
-            }
-          } else {
-            toast.info("Overwrite canceled.");
-          }
-        } else {
-          toast.error(`Upload failed: ${result.message}`);
-        }
-      }
-
-      // Refresh container list after upload
-      const data = await getContainers();
-      const list = data.map((item) => ({
-        name: item.name,
-        object: item.objects,
-        bytes: item.bytes,
-        lastModified: new Date(item.last_modified).toISOString().split("T")[0],
-      }));
-      setContainers(list);
-
-      // Reset modal
-      setShowUploadModal(false);
-      setSelectedFile(null);
-      setUploadingContainer(null);
-    } catch (error) {
-      console.error("Upload error:", error);
-      toast.error("An error occurred during file upload!");
-    } finally {
-      setIsUploading(false);
-      setUploadProgress(0);
-    }
-  };
 
   const handleSelectContainer = (containerName) => {
     setSelectedContainers((prev) =>
@@ -191,48 +107,48 @@ export default function SwiftContainerList() {
   };
 
   const handleCreateContainer = async () => {
-  const name = newContainerName.trim();
-  if (!name) {
-    toast.error("Please enter a container name.");
-    return;
-  }
-
-  if (containers.some((c) => c.name === name)) {
-    toast.info(`Container "${name}" already exists.`);
-    setNewContainerName("");
-    setShowCreateModal(false);
-    return;
-  }
-
-  try {
-    setIsCreating(true); // Khóa nút Create khi bắt đầu request
-    const res = await createContainer(name);
-
-    if (res.success) {
-      const newContainer = {
-        name,
-        object: 0,
-        bytes: 0,
-        lastModified: new Date().toISOString().split("T")[0],
-      };
-      setContainers((prev) => [...prev, newContainer]);
-      toast.success(`Container "${name}" created successfully!`);
-    } else if (res.message?.toLowerCase().includes("exists")) {
-      toast.info(`Container "${name}" already exists.`);
-    } else {
-      toast.error(`Failed to create container: ${res.message || "Unknown error"}`);
+    const name = newContainerName.trim();
+    if (!name) {
+      toast.error("Please enter a container name.");
+      return;
     }
-  } catch (error) {
-    console.error("Error creating container:", error);
-    toast.error("Failed to create container. Please try again.");
-  } finally {
-    setIsCreating(false); // Mở lại nút sau khi hoàn tất
-    setNewContainerName("");
-    setShowCreateModal(false);
-  }
-};
 
-  //  Delete single container
+    if (containers.some((c) => c.name === name)) {
+      toast.info(`Container "${name}" already exists.`);
+      setNewContainerName("");
+      setShowCreateModal(false);
+      return;
+    }
+
+    try {
+      setIsCreating(true);
+      const res = await createContainer(name);
+
+      if (res.success) {
+        const newContainer = {
+          name,
+          object: 0,
+          bytes: 0,
+          lastModified: new Date().toISOString().split("T")[0],
+        };
+        setContainers((prev) => [...prev, newContainer]);
+        toast.success(`Container "${name}" created successfully!`);
+      } else if (res.message?.toLowerCase().includes("exists")) {
+        toast.info(`Container "${name}" already exists.`);
+      } else {
+        toast.error(`Failed to create container: ${res.message || "Unknown error"}`);
+      }
+    } catch (error) {
+      console.error("Error creating container:", error);
+      toast.error("Failed to create container. Please try again.");
+    } finally {
+      setIsCreating(false);
+      setNewContainerName("");
+      setShowCreateModal(false);
+    }
+  };
+
+  // Delete single container
   const handleDeleteContainer = async (containerName) => {
     if (
       !window.confirm(
@@ -255,65 +171,59 @@ export default function SwiftContainerList() {
   };
 
   // Delete multiple containers
-  // Delete multiple containers
-const handleDeleteSelected = async () => {
-  if (
-    !window.confirm(
-      `Are you sure you want to delete ${selectedContainers.length} container(s)?`
+  const handleDeleteSelected = async () => {
+    if (
+      !window.confirm(
+        `Are you sure you want to delete ${selectedContainers.length} container(s)?`
+      )
     )
-  )
-    return;
+      return;
 
-  try {
-    let successCount = 0;
-    let failCount = 0;
+    try {
+      let successCount = 0;
+      let failCount = 0;
 
-    // Dùng vòng lặp để xóa từng container
-    for (const containerName of selectedContainers) {
-      try {
-        const response = await delContainer(containerName);
-        if (response?.success) {
-          successCount++;
-        } else {
+      for (const containerName of selectedContainers) {
+        try {
+          const response = await delContainer(containerName);
+          if (response?.success) {
+            successCount++;
+          } else {
+            failCount++;
+            console.error(`Failed to delete ${containerName}:`, response?.message);
+          }
+        } catch (error) {
           failCount++;
-          console.error(`Failed to delete ${containerName}:`, response?.message);
+          console.error(`Error deleting ${containerName}:`, error);
         }
-      } catch (error) {
-        failCount++;
-        console.error(`Error deleting ${containerName}:`, error);
       }
+
+      if (successCount > 0) {
+        toast.success(`Deleted ${successCount} container(s) successfully!`);
+      }
+      if (failCount > 0) {
+        toast.error(`Failed to delete ${failCount} container(s)!`);
+      }
+
+      const data = await getContainers();
+      const list = data.map((item) => ({
+        name: item.name,
+        object: item.objects || 0,
+        bytes: item.bytes || 0,
+        lastModified: item.last_modified 
+          ? new Date(item.last_modified).toISOString().split("T")[0]
+          : "N/A",
+      }));
+      setContainers(list);
+      setSelectedContainers([]);
+
+    } catch (error) {
+      console.error("Error deleting selected containers:", error);
+      toast.error("An error occurred while deleting containers!");
     }
+  };
 
-    // Hiển thị thông báo kết quả
-    if (successCount > 0) {
-      toast.success(`Deleted ${successCount} container(s) successfully!`);
-    }
-    if (failCount > 0) {
-      toast.error(`Failed to delete ${failCount} container(s)!`);
-    }
-
-    // Cập nhật lại danh sách containers trong UI
-    // Chỉ loại bỏ những container đã xóa thành công
-    const data = await getContainers();
-    const list = data.map((item) => ({
-      name: item.name,
-      object: item.objects || 0,
-      bytes: item.bytes || 0,
-      lastModified: item.last_modified 
-        ? new Date(item.last_modified).toISOString().split("T")[0]
-        : "N/A",
-    }));
-    setContainers(list);
-    setSelectedContainers([]);
-
-  } catch (error) {
-    console.error("Error deleting selected containers:", error);
-    toast.error("An error occurred while deleting containers!");
-  }
-};
-
-
-  //  Download container
+  // Download container
   const handleDownloadContainer = async (containerName) => {
     try {
       await downloadContainer(containerName);
@@ -324,7 +234,7 @@ const handleDeleteSelected = async () => {
     }
   };
 
-  //  Navigate to container details
+  // Navigate to container details
   const handleClick = (container) => {
     navigate(`/container/${container.name}`, {
       state: { containerName: container.name },
@@ -350,8 +260,8 @@ const handleDeleteSelected = async () => {
           />
         </div>
 
-         <div className="actions">
-          {(isPrivileged) && (
+        <div className="actions">
+          {isPrivileged && (
             <button
               className="btn btn-primary"
               onClick={() => setShowCreateModal(true)}
@@ -364,7 +274,7 @@ const handleDeleteSelected = async () => {
             <RefreshCw size={18} className={isLoading ? "rotating" : ""} />
             Refresh
           </button>
-          {(isPrivileged) && selectedContainers.length > 0 && (
+          {isPrivileged && selectedContainers.length > 0 && (
             <button className="btn btn-danger" onClick={handleDeleteSelected}>
               <Trash2 size={18} />
               Delete ({selectedContainers.length})
@@ -451,16 +361,6 @@ const handleDeleteSelected = async () => {
                 <td>{container.lastModified}</td>
                 <td>
                   <div className="action-buttons">
-                    {isPrivileged && (
-                       <button
-                      className="icon-btn"
-                      title="Upload"
-                      onClick={() => handleOpenUploadModal(container.name)}
-                    >
-                      <Upload size={16} />
-                    </button>
-                    )}
-                   
                     <button
                       className="icon-btn"
                       title="Download"
@@ -521,40 +421,6 @@ const handleDeleteSelected = async () => {
                 disabled={isCreating}
               >
                 {isCreating ? "Creating..." : "Create"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Upload modal */}
-      {showUploadModal && (
-        <div
-          className="modal-overlay"
-          onClick={() => setShowUploadModal(false)}
-        >
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h2>Upload file to container "{uploadingContainer}"</h2>
-
-            <input
-              type="file"
-              onChange={(e) => setSelectedFile(e.target.files[0])}
-              className="modal-input"
-            />
-
-            <div className="modal-actions">
-              <button
-                className="btn btn-secondary"
-                onClick={() => setShowUploadModal(false)}
-              >
-                Cancel
-              </button>
-              <button
-                className="btn btn-primary"
-                onClick={handleUploadFile}
-                disabled={!selectedFile || isUploading}
-              >
-                {isUploading ? `Uploading... (${uploadProgress}%)` : "Upload"}
               </button>
             </div>
           </div>
