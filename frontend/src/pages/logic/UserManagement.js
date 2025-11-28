@@ -28,17 +28,24 @@ export const getSysUsers = async()=>{
     }
 }
 
-export const createUser = async(username,password)=>{
-    try{
-        const response = await api.post('/api/users/create-user',{
-            username,
-            password
-        })
-        return response.data;
-    }catch(error){
-        console.error('Error while create user', error);
-    }
-}
+export const createUser = async (username, password) => {
+  try {
+    const response = await api.post('/api/users/create-user', {
+      username,
+      password
+    });
+
+    return response.data;
+
+  } catch (error) {
+    const status = error.response?.status;
+    throw {
+      status,
+      message: error.response?.data?.message || "Error creating user"
+    };
+  }
+};
+
 
 export const deleteUser = async(userId)=>{
     try{

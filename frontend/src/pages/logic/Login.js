@@ -71,7 +71,7 @@ export const handleLogin = async (username, password, project, domain) => {
 
     if (error.response) {
       if (error.response.status === 401) {
-        return { success: false, message: 'Wrong username or password.' };
+        return { success: false, message: 'Username, password or project is incorrect. Please check again.' };
       } else if (error.response.status === 403) {
         return {
           success: false,

@@ -87,6 +87,17 @@ export default function ProjectManager() {
         return;
       }
 
+      // Kiểm tra trùng tên project
+      const isDuplicate = projects.some(
+        project => project.name.toLowerCase() === projectName.toLowerCase()
+      );
+      
+      if (isDuplicate) {
+        toast.error("Project name already exists! Please choose a different name.");
+        setLoading(false);
+        return;
+      }
+
       if (newProject.quota <= 0) {
         toast.error("Quota must be greater than 0!");
         setLoading(false);
@@ -136,56 +147,53 @@ export default function ProjectManager() {
     }
   };
 
+  const isQuotaUpdateValid = () => {
+  if (!quotaEdit.quota) return false;
+  
+  // Kiểm tra quota nhỏ hơn usage hiện tại
+  if (quotaEdit.quota * 1024 * 1024 * 1024 < selectedProject.used) {
+    return false;
+  }
+  
+  // Kiểm tra vượt quá tổng quota
+  const otherProjectsQuotaGB = projects
+    .filter(p => p.id !== selectedProject.id)
+    .reduce((sum, p) => sum + p.quota, 0) / (1024 * 1024 * 1024);
+  
+  if (otherProjectsQuotaGB + quotaEdit.quota > MAX_TOTAL_QUOTA_GB) {
+    return false;
+  }
+  
+  return true;
+};
+
   const handleUpdateQuota = async () => {
-    if (!selectedProject) return;
-    
-    setLoading(true);
+  if (!selectedProject) return;
+  
+  setLoading(true);
+  
+  try {
     const quota_bytes = quotaEdit.quota * 1024 * 1024 * 1024;
 
-    if (quotaEdit.quota <= 0) {
-      toast.error("Quota must be greater than 0!");
-      setLoading(false);
-      return;
-    }
-
-    // Tính tổng quota của các project khác (không bao gồm project đang edit)
-    const otherProjectsQuota = projects
-      .filter(p => p.id !== selectedProject.id)
-      .reduce((sum, p) => sum + p.quota, 0);
+    const response = await updateQuota(selectedProject.id, quota_bytes);
     
-    const otherProjectsQuotaGB = otherProjectsQuota / (1024 * 1024 * 1024);
-    const newQuotaGB = quotaEdit.quota;
-    const totalAfterUpdate = otherProjectsQuotaGB + newQuotaGB;
-
-    // Kiểm tra nếu tổng quota vượt quá 50GB
-    if (totalAfterUpdate > MAX_TOTAL_QUOTA_GB) {
-      toast.error(
-        `Cannot update quota! Total quota would be ${totalAfterUpdate.toFixed(2)}GB (maximum: ${MAX_TOTAL_QUOTA_GB}GB). Available: ${(MAX_TOTAL_QUOTA_GB - otherProjectsQuotaGB).toFixed(2)}GB`
-      );
-      setLoading(false);
-      return;
+    if (response.success) {
+      toast.success('Quota updated successfully!');
+      setProjects(projects.map(p =>
+        p.id === selectedProject.id ? { ...p, quota: quota_bytes } : p
+      ));
+      setShowQuotaModal(false);
+      setSelectedProject(null);
+    } else {
+      toast.error('Failed to update quota: ' + response.message);
     }
-
-    try {
-      const response = await updateQuota(selectedProject.id, quota_bytes);
-      if (response.success) {
-        toast.success('Quota updated successfully!');
-        setProjects(projects.map(p =>
-          p.id === selectedProject.id
-            ? { ...p, quota: quota_bytes }
-            : p
-        ));
-        setShowQuotaModal(false);
-        setSelectedProject(null);
-      } else {
-        toast.error('Failed to update quota: ' + response.message);
-      }
-    } catch (error) {
-      toast.error('An error occurred while updating quota: ' + error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  } catch (error) {
+    console.error('Error updating quota:', error);
+    toast.error('An error occurred while updating quota');
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleDeleteProject = async (projectId) => {
     if (!confirm('Are you sure you want to delete this project?'))
@@ -303,7 +311,17 @@ export default function ProjectManager() {
                 <Settings size={16} />
                 Quota
               </button>
-              <button onClick={() => handleDeleteProject(project.id)} className="pm-btn pm-btn-danger">
+              <button 
+             onClick={() => handleDeleteProject(project.id)} 
+                className="pm-btn pm-btn-danger"
+                disabled={project.name.toLowerCase() === 'admin'}
+                style={{
+                  opacity: project.name.toLowerCase() === 'admin' ? 0.5 : 1,
+                  cursor: project.name.toLowerCase() === 'admin' ? 'not-allowed' : 'pointer',
+                  pointerEvents: project.name.toLowerCase() === 'admin' ? 'none' : 'auto'
+                }}
+
+              >
                 <Trash2 size={16} />
               </button>
             </div>
@@ -462,7 +480,7 @@ export default function ProjectManager() {
               </button>
               <button
                 onClick={handleUpdateQuota}
-                disabled={!quotaEdit.quota || loading}
+                disabled={!isQuotaUpdateValid() || loading}
                 className="pm-btn pm-btn-primary"
               >
                 {loading ? "Updating..." : "Update"}

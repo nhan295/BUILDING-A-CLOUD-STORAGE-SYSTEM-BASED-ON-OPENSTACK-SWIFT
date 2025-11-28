@@ -1,60 +1,59 @@
-import React, { useState } from 'react';
-import { Cloud, Lock, Eye, EyeOff, AlertCircle, User } from 'lucide-react';
-import { handleLogin, getAvailableDomains } from '../logic/Login.js';
-import '../style/Login.css';
+import React, { useState } from "react";
+import { Cloud, Lock, Eye, EyeOff, AlertCircle, User } from "lucide-react";
+import { handleLogin, getAvailableDomains } from "../logic/Login.js";
+import "../style/Login.css";
 
 export default function LoginPage() {
-
   // Form state
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [domain, setDomain] = useState('Default');
-  const [project, setProject] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [domain, setDomain] = useState("Default");
+  const [project, setProject] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  
+  const [error, setError] = useState("");
+
   // Domains
   const availableDomains = getAvailableDomains();
 
   // Handlers
   const handleUsernameChange = (value) => {
     setUsername(value);
-    setError('');
+    setError("");
   };
 
   const handlePasswordChange = (value) => {
     setPassword(value);
-    setError('');
+    setError("");
   };
 
   const handleDomainChange = (value) => {
     setDomain(value);
-    setError('');
+    setError("");
   };
 
   const handleProjectChange = (value) => {
     setProject(value);
-    setError('');
+    setError("");
   };
 
   const handleLoginClick = async (e) => {
     e.preventDefault?.();
-    setError('');
-    
+    setError("");
+
     // Validate input fields
     if (!username.trim()) {
-      setError('Username is required');
+      setError("Username is required");
       return;
     }
-    
+
     if (!password) {
-      setError('Password is required');
+      setError("Password is required");
       return;
     }
-    
+
     if (!project.trim()) {
-      setError('Project name is required');
+      setError("Project name is required");
       return;
     }
 
@@ -64,29 +63,17 @@ export default function LoginPage() {
       const result = await handleLogin(username, password, project, domain);
 
       if (result.success) {
-        setUsername('');
-        setPassword('');
-        setProject('');
+        setUsername("");
+        setPassword("");
+        setProject("");
         // Redirect or show success message
-      } else {
-        // Handle specific error cases
-        if (result.message.toLowerCase().includes('username')) {
-          setError('Invalid username. Please check and try again.');
-        } else if (result.message.toLowerCase().includes('password')) {
-          setError('Incorrect password. Please try again.');
-        } else if (result.message.toLowerCase().includes('project')) {
-          setError('Project not found. Please verify the project name.');
-        } else if (result.message.toLowerCase().includes('network') || result.message.toLowerCase().includes('connection')) {
-          setError('Network error. Please check your connection and try again.');
-        } else if (result.message.toLowerCase().includes('timeout')) {
-          setError('Request timeout. Please try again.');
-        } else {
-          setError(result.message || 'Authentication failed. Please check your credentials.');
-        }
+      }
+      else{
+         setError(result.message);
       }
     } catch (err) {
-      setError('An unexpected error occurred. Please try again later.');
-      console.error('Login error:', err);
+      setError("An unexpected error occurred. Please try again later.");
+      console.error("Login error:", err);
     } finally {
       setLoading(false);
     }
@@ -121,7 +108,9 @@ export default function LoginPage() {
             </div>
           )}
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div
+            style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}
+          >
             {/* Domain */}
             <div className="form-group">
               <label className="form-label">Domain</label>
@@ -159,7 +148,7 @@ export default function LoginPage() {
               <div className="form-input-wrapper">
                 <Lock className="form-input-icon" />
                 <input
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => handlePasswordChange(e.target.value)}
                   placeholder="Enter password"
@@ -196,8 +185,19 @@ export default function LoginPage() {
               className="btn btn-primary"
             >
               {loading && (
-                <svg className="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <circle cx="12" cy="12" r="10" strokeWidth="2" opacity="0.25"></circle>
+                <svg
+                  className="spinner"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                >
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    strokeWidth="2"
+                    opacity="0.25"
+                  ></circle>
                   <path
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     fill="currentColor"
@@ -205,7 +205,7 @@ export default function LoginPage() {
                   ></path>
                 </svg>
               )}
-              {loading ? 'Authenticating...' : 'Login'}
+              {loading ? "Authenticating..." : "Login"}
             </button>
           </div>
         </div>

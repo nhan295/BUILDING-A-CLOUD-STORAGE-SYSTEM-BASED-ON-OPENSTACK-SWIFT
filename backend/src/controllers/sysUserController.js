@@ -119,7 +119,13 @@ const createUser = async(req,res)=>{
       user: response.data.user,
     });
   } catch (error) {
-    console.error('Error creating user:', error.response?.data || error.message);
+     if (res.status === 409) {
+      return res.status(409).json({
+        success: false,
+        message: 'Username already exists',
+        error: keystoneError,
+      });
+    }
     return res.status(error.response?.status || 500).json({
       success: false,
       message: 'Failed to create user',
@@ -139,7 +145,7 @@ const deleteUser = async(req,res)=>{
 
     return res.status(200).json({
       success: true,
-      message: `User ${user_id} deleted successfully`,
+      message: `User deleted successfully`,
     });
   } catch (error) {
     console.error('Error deleting user:', error.response?.data || error.message);
@@ -156,6 +162,7 @@ const assignUserToProject = async (req, res) => {
     const token = req.headers['x-auth-token'];
     const { project_id, user_id, role_name } = req.body;
 
+    // Validation
     if (!project_id || !user_id || !role_name) {
       return res.status(400).json({
         success: false,
@@ -163,6 +170,7 @@ const assignUserToProject = async (req, res) => {
       });
     }
 
+    // Get role ID
     const rolesRes = await axios.get(`${KEYSTONE_URL}/roles`, {
       headers: { 'X-Auth-Token': token },
     });
@@ -175,7 +183,7 @@ const assignUserToProject = async (req, res) => {
       });
     }
 
-    // Kiểm tra user đã có role nào trong project chưa
+    // Check existing roles
     const assignedRolesRes = await axios.get(
       `${KEYSTONE_URL}/projects/${project_id}/users/${user_id}/roles`,
       { headers: { 'X-Auth-Token': token } }
@@ -183,15 +191,24 @@ const assignUserToProject = async (req, res) => {
 
     const assignedRoles = assignedRolesRes.data.roles || [];
 
-    // Nếu đã có bất kỳ role nào => không cho gán thêm
-    if (assignedRoles.length > 0) {
-      const existingRoleNames = assignedRoles.map(r => r.name).join(', ');
-      return res.status(400).json({
-        success: false,
-        message: `User already has role(s) '${existingRoleNames}' in this project. Cannot assign another role.`,
+    // User đã có role này rồi
+    if (assignedRoles.some(r => r.id === role.id)) {
+      return res.status(200).json({
+        success: true,
+        message: `User already has '${role_name}' role in this project.`,
       });
     }
 
+    // User đã có role khác
+    if (assignedRoles.length > 0) {
+      const existingRoleNames = assignedRoles.map(r => r.name).join(', ');
+      return res.status(409).json({
+        success: false,
+        message: `User already has '${existingRoleNames}' role in this project. Cannot assign multiple roles.`,
+      });
+    }
+
+    // Assign role mới
     await axios.put(
       `${KEYSTONE_URL}/projects/${project_id}/users/${user_id}/roles/${role.id}`,
       null,
@@ -200,8 +217,9 @@ const assignUserToProject = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: `User assigned to project successfully with role '${role_name}'.`,
+      message: `User assigned as '${role_name}' successfully.`,
     });
+    
   } catch (error) {
     console.error('Error assigning user to project:', error.response?.data || error.message);
     return res.status(error.response?.status || 500).json({

@@ -185,23 +185,23 @@ export default function UserManagement() {
     try {
       const response = await createUser(newUser.username, newUser.password);
 
-      if (response && response.success) {
-        const createdUser = response.user || {
-          userId: users.length + 1,
-          username: newUser.username,
-          role: "unassigned",
-          projects: [],
-        };
+      response && response.success;
+      const createdUser = response.user || {
+        userId: users.length + 1,
+        username: newUser.username,
+        role: "unassigned",
+        projects: [],
+      };
 
-        setUsers((prev) => [...prev, createdUser]);
-        toast.success("User created successfully!");
-        await fetchData();
-      } else {
-        toast.error(response?.message || "Unable to create user. Please try again.");
-      }
+      setUsers((prev) => [...prev, createdUser]);
+      toast.success("User created successfully!");
+      await fetchData();
     } catch (error) {
-      console.error("Error while creating user:", error);
-      toast.error("An error occurred while creating the user.");
+      if (error.status === 409) {
+        toast.error("Username already exists!");
+      } else {
+        toast.error(error.message || "Failed to create user.");
+      }
     } finally {
       setLoading(false);
       setShowCreateModal(false);
@@ -221,44 +221,7 @@ export default function UserManagement() {
     }
 
     try {
-      // Kiểm tra xem user đã được assign vào project này chưa
-      const existingProject = selectedUser.projects?.find(
-        (p) => p.id === assignData.projectId
-      );
-
-      if (existingProject) {
-        // Kiểm tra xem role đã tồn tại chưa
-        if (existingProject.roles?.includes(assignData.role)) {
-          // Role đã tồn tại - gọi API nhưng chỉ thông báo
-          const response = await assignUsertoProject(
-            assignData.projectId,
-            selectedUser.userId,
-            assignData.role
-          );
-
-          if (response?.success) {
-            toast.info(
-              `User "${selectedUser.username}" has been assigned to project "${assignData.projectName}" as ${assignData.role}.`
-            );
-          } else {
-            toast.error(response?.message || "Failed to assign user to project.");
-          }
-        } else {
-          // User đã có role khác trong project này
-          toast.error(
-            `Cannot assign additional role. User "${selectedUser.username}" already has role(s) in project "${assignData.projectName}".`
-          );
-        }
-
-        // Reset modal và dữ liệu
-        setShowAssignModal(false);
-        setAssignData({ projectId: "", projectName: "", role: "member" });
-        setSelectedUser(null);
-        setLoading(false);
-        return;
-      }
-
-      // User chưa có trong project - gán mới
+      // Gọi API assign
       const response = await assignUsertoProject(
         assignData.projectId,
         selectedUser.userId,
@@ -266,62 +229,72 @@ export default function UserManagement() {
       );
 
       if (response?.success) {
-        // Cập nhật danh sách user trong state
-        const updatedUsers = users.map((u) => {
-          if (u.userId === selectedUser.userId) {
-            return {
-              ...u,
-              projects: [
-                ...(u.projects || []),
-                {
-                  id: assignData.projectId,
-                  name: assignData.projectName,
-                  roles: [assignData.role], // must be array
-                },
-              ],
-              role: assignData.role,
-            };
-          }
-          return u;
-        });
-
-        setUsers(updatedUsers);
-
-        toast.success(
-          `User "${selectedUser.username}" has been assigned to project "${assignData.projectName}" as ${assignData.role}.`
+        // Kiểm tra xem user đã có trong project chưa
+        const existingProject = selectedUser.projects?.find(
+          (p) => p.id === assignData.projectId
         );
 
-        // Reset modal và dữ liệu
-        setShowAssignModal(false);
-        setAssignData({ projectId: "", projectName: "", role: "member" });
-        setSelectedUser(null);
+        if (!existingProject) {
+          // User chưa có trong project - cập nhật state
+          const updatedUsers = users.map((u) => {
+            if (u.userId === selectedUser.userId) {
+              return {
+                ...u,
+                projects: [
+                  ...(u.projects || []),
+                  {
+                    id: assignData.projectId,
+                    name: assignData.projectName,
+                    roles: [assignData.role],
+                  },
+                ],
+                role: assignData.role,
+              };
+            }
+            return u;
+          });
+          setUsers(updatedUsers);
+        }
+
+        // Thông báo thành công (backend đã xử lý message)
+        toast.success(response.message);
       } else {
+        // Thông báo lỗi từ backend
         toast.error(response?.message || "Failed to assign user to project.");
       }
+
+      // Reset modal và dữ liệu
+      setShowAssignModal(false);
+      setAssignData({ projectId: "", projectName: "", role: "member" });
+      setSelectedUser(null);
     } catch (error) {
       console.error("Error in handleAssignToProject:", error);
-      toast.error("An error occurred while assigning the user.");
+      toast.error(
+        error.response?.data?.message ||
+          "An error occurred while assigning the user."
+      );
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (userId) => {
-    if (!window.confirm("Are you sure you want to delete this user?")) return;
+  if (!window.confirm("Are you sure you want to delete this user?")) return;
 
-    try {
-      const res = await deleteUser(userId);
-      if (res && res.success) {
-        toast.success("User deleted successfully!");
-        setUsers(users.filter((user) => user.userId !== userId));
-      } else {
-        toast.error("Failed to delete user.");
-      }
-    } catch (error) {
-      console.error("Error while deleting user:", error);
-      toast.error("An error occurred while deleting the user.");
+  try {
+    const res = await deleteUser(userId);
+    
+    if (res?.success) {
+      toast.success(res.message); 
+      setUsers(users.filter((user) => user.userId !== userId));
+    } else {
+      toast.error(res?.message || "Failed to delete user.");
     }
-  };
+  } catch (error) {
+    console.error("Error while deleting user:", error);
+    toast.error(error.response?.data?.message || "An error occurred while deleting the user.");
+  }
+};
 
   const handleRemovefromProject = async (userId, projectId) => {
     if (
@@ -341,7 +314,9 @@ export default function UserManagement() {
       }
     } catch (error) {
       console.error("Error while removing user from project:", error);
-      toast.error("An error occurred while removing the user from the project.");
+      toast.error(
+        "An error occurred while removing the user from the project."
+      );
     }
   };
 
@@ -474,6 +449,19 @@ export default function UserManagement() {
                       <button
                         className="um-btn-delete"
                         onClick={() => handleDelete(user.userId)}
+                        disabled={user.username.toLowerCase() === "admin"}
+                        style={{
+                          opacity:
+                            user.username.toLowerCase() === "admin" ? 0.5 : 1,
+                          cursor:
+                            user.username.toLowerCase() === "admin"
+                              ? "not-allowed"
+                              : "pointer",
+                          pointerEvents:
+                            user.username.toLowerCase() === "admin"
+                              ? "none"
+                              : "auto",
+                        }}
                       >
                         <Trash2 className="um-icon" />
                         Delete
