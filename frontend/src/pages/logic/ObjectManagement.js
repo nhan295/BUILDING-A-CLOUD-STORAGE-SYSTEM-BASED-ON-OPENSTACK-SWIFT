@@ -28,7 +28,7 @@ export const uploadFile = async (container, files, setUploadProgress, replace = 
       }
     );
 
-    return { success: true, data: res.data };
+    return res.data;
   } catch (err) {
     console.error("Upload file error:", err);
     return {

@@ -55,85 +55,170 @@ export default function ObjectManagement() {
   }, [containerName]);
 
   const handleFileUpload = async (e) => {
-    const files = Array.from(e.target.files);
-    if (files.length === 0) return;
+  const files = Array.from(e.target.files);
+  if (files.length === 0) return;
 
-    try {
-      setIsUploading(true);
-      
-      // Khởi tạo danh sách file đang upload
-      const fileList = files.map((file, index) => ({
-        id: `${Date.now()}-${index}`,
-        name: file.name,
-        progress: 0,
-        status: 'uploading' // uploading, success, error
-      }));
-      setUploadingFiles(fileList);
+  try {
+    setIsUploading(true);
+    
+    const fileList = files.map((file, index) => ({
+      id: `${Date.now()}-${index}`,
+      name: file.name,
+      progress: 0,
+      status: 'uploading'
+    }));
+    setUploadingFiles(fileList);
 
+    const progressInterval = setInterval(() => {
+      setUploadingFiles(prev => 
+        prev.map(file => {
+          if (file.status === 'uploading' && file.progress < 90) {
+            return { ...file, progress: Math.min(file.progress + 10, 90) };
+          }
+          return file;
+        })
+      );
+    }, 300);
 
-      // Giả lập progress cho từng file (vì backend có thể không hỗ trợ individual progress)
-      const progressInterval = setInterval(() => {
-        setUploadingFiles(prev => 
+    // Upload lần đầu (replace=false)
+    const response = await uploadFile(containerName, files, () => {});
+
+    clearInterval(progressInterval);
+
+    //  Check response.results thay vì chỉ response.success
+    console.log('Upload response:', response);
+
+    if (!response.success) {
+      // Upload thất bại hoàn toàn
+      toast.error("Upload failed: " + response.message);
+      setUploadingFiles(prev =>
+        prev.map(file => ({ ...file, progress: 100, status: 'error' }))
+      );
+      setIsUploading(false);
+      setTimeout(() => setUploadingFiles([]), 1500);
+      return;
+    }
+
+    //  Check có file trùng không
+    const duplicateFiles = response.results?.filter(
+      r => !r.success && r.message?.includes('already exists')
+    ) || [];
+
+    console.log('Duplicate files:', duplicateFiles);
+
+    if (duplicateFiles.length > 0) {
+      //  CÓ FILE TRÙNG - Hỏi user
+      const fileNames = duplicateFiles.map(f => f.name).join('\n');
+      const confirmReplace = window.confirm(
+        `The following file(s) already exist:\n${fileNames}\n\nDo you want to overwrite them?`
+      );
+
+      if (confirmReplace) {
+        // User chọn ghi đè
+        setUploadingFiles(prev =>
           prev.map(file => {
-            if (file.status === 'uploading' && file.progress < 90) {
-              return { ...file, progress: Math.min(file.progress + 10, 90) };
-            }
-            return file;
+            const isDuplicate = duplicateFiles.some(d => d.name === file.name);
+            return isDuplicate 
+              ? { ...file, progress: 0, status: 'uploading' }
+              : { ...file, progress: 100, status: 'success' };
           })
         );
-      }, 300);
 
-      const response = await uploadFile(containerName, files, () => {
-        // Callback cho progress nếu backend hỗ trợ
-      });
+        // Chỉ upload lại files bị trùng
+        const filesToReplace = files.filter(file =>
+          duplicateFiles.some(d => d.name === file.name)
+        );
 
-      clearInterval(progressInterval);
+        const retryInterval = setInterval(() => {
+          setUploadingFiles(prev =>
+            prev.map(file => {
+              const isDuplicate = duplicateFiles.some(d => d.name === file.name);
+              if (isDuplicate && file.status === 'uploading' && file.progress < 90) {
+                return { ...file, progress: Math.min(file.progress + 10, 90) };
+              }
+              return file;
+            })
+          );
+        }, 300);
 
-      // Cập nhật trạng thái hoàn thành
-      setUploadingFiles(prev =>
-        prev.map(file => ({
-          ...file,
-          progress: 100,
-          status: response.success ? 'success' : 'error'
-        }))
-      );
+        // Upload với replace=true
+        const replaceRes = await uploadFile(containerName, filesToReplace, () => {}, true);
+        clearInterval(retryInterval);
 
-      if (response.success) {
-        toast.success("Files uploaded successfully!");
-        // Đợi 1.5s để hiển thị success rồi mới đóng toast
-        setTimeout(() => {
-          setIsUploading(false);
-          setUploadingFiles([]);
-        }, 1500);
+        if (replaceRes.success) {
+          toast.success('File(s) overwritten successfully!');
+          setUploadingFiles(prev =>
+            prev.map(file => {
+              const replaceResult = replaceRes.results?.find(r => r.name === file.name && r.success);
+              if (replaceResult) {
+                return { ...file, progress: 100, status: 'success' };
+              }
+              return file;
+            })
+          );
+        } else {
+          toast.error('Overwrite failed: ' + replaceRes.message);
+          setUploadingFiles(prev =>
+            prev.map(file => {
+              const isDuplicate = duplicateFiles.some(d => d.name === file.name);
+              return isDuplicate
+                ? { ...file, progress: 100, status: 'error' }
+                : file;
+            })
+          );
+        }
       } else {
-        toast.error("Upload failed: " + response.message);
-        setIsUploading(false);
+        // User không muốn ghi đè
+        toast.info('Overwrite canceled.');
+        setUploadingFiles(prev =>
+          prev.map(file => {
+            const isDuplicate = duplicateFiles.some(d => d.name === file.name);
+            const successFile = response.results?.find(r => r.name === file.name && r.success);
+            return isDuplicate
+              ? { ...file, progress: 100, status: 'error' }
+              : { ...file, progress: 100, status: successFile ? 'success' : 'error' };
+          })
+        );
       }
-
-      // Reload danh sách files
-      const updatedData = await getObject(containerName);
-      setObjects(
-        updatedData.map((obj, index) => ({
-          id: index + 1,
-          name: obj.name,
-          size: (obj.size / (1024 * 1024)).toFixed(2) + " MB",
-          upload_at: new Date(obj.upload_at).toISOString().split("T")[0],
-          type: obj.name.split(".").pop(),
-          owner: obj.upload_by || "unknown",
-        }))
-      );
-    } catch (error) {
-      console.error("Error uploading files:", error);
-      toast.error("Upload failed.");
+    } else {
+      
+      toast.success("Files uploaded successfully!");
       setUploadingFiles(prev =>
-        prev.map(file => ({ ...file, status: 'error', progress: 100 }))
+        prev.map(file => ({ ...file, progress: 100, status: 'success' }))
       );
-      setTimeout(() => {
-        setIsUploading(false);
-        setUploadingFiles([]);
-      }, 2000);
     }
-  };
+
+    setIsUploading(false);
+
+    setTimeout(() => {
+      setUploadingFiles([]);
+    }, 1500);
+
+    // Reload danh sách files
+    const updatedData = await getObject(containerName);
+    setObjects(
+      updatedData.map((obj, index) => ({
+        id: index + 1,
+        name: obj.name,
+        size: (obj.size / (1024 * 1024)).toFixed(2) + " MB",
+        upload_at: new Date(obj.upload_at).toISOString().split("T")[0],
+        type: obj.name.split(".").pop(),
+        owner: obj.upload_by || "unknown",
+      }))
+    );
+
+  } catch (error) {
+    console.error("Error uploading files:", error);
+    toast.error("Upload failed.");
+    setUploadingFiles(prev =>
+      prev.map(file => ({ ...file, status: 'error', progress: 100 }))
+    );
+    setIsUploading(false);
+    setTimeout(() => {
+      setUploadingFiles([]);
+    }, 2000);
+  }
+};
 
   const handleDeleteObject = async (containerName, objectName) => {
     if (
