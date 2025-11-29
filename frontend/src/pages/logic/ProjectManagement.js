@@ -8,19 +8,29 @@ export const getProjects = async()=> {
     }
 }
 
-export const createProject = async(projectName,quota_bytes,description)=>{
-    try{
-        const response = await api.post('/api/projects/create-project',{
-            projectName,
-            quota_bytes,
-            description
-        })
-        return response.data;
-    }catch(error){
-        console.error('Error while creating project', error);
-        throw error;
+export const createProject = async (projectName, quota_bytes, description) => {
+  try {
+    const response = await api.post('/api/projects/create-project', {
+      projectName,
+      quota_bytes,
+      description,
+    });
+    return response.data; 
+  } catch (error) {
+    console.error('Error creating project:', error);
+    
+    //  Return error response từ backend
+    if (error.response?.data) {
+      return error.response.data; 
     }
-}
+    
+    // Network error
+    return {
+      success: false,
+      message: 'Network error. Please check your connection.',
+    };
+  }
+};
 
 export const deleteProject = async(projectId)=>{
     try{

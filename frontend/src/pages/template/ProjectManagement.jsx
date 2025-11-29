@@ -75,77 +75,68 @@ export default function ProjectManager() {
   };
 
   const handleCreateProject = async () => {
-    setLoading(true);
-    try {
-      const projectName = newProject.name.trim();
-      const description = newProject.description.trim();
-      const quota_bytes = newProject.quota * 1024 * 1024 * 1024; // GB → bytes
+  setLoading(true);
+  
+  try {
+    const projectName = newProject.name.trim();
+    const description = newProject.description.trim();
+    const quota_bytes = newProject.quota * 1024 * 1024 * 1024; // GB → bytes
 
-      if (!projectName) {
-        toast.error("Project name cannot be empty!");
-        setLoading(false);
-        return;
-      }
-
-      // Kiểm tra trùng tên project
-      const isDuplicate = projects.some(
-        project => project.name.toLowerCase() === projectName.toLowerCase()
-      );
-      
-      if (isDuplicate) {
-        toast.error("Project name already exists! Please choose a different name.");
-        setLoading(false);
-        return;
-      }
-
-      if (newProject.quota <= 0) {
-        toast.error("Quota must be greater than 0!");
-        setLoading(false);
-        return;
-      }
-
-      // Tính tổng quota hiện tại của tất cả projects
-      const totalCurrentQuotaGB = getTotalQuotaGB();
-      const newQuotaGB = newProject.quota;
-      const totalAfterCreate = totalCurrentQuotaGB + newQuotaGB;
-
-      // Kiểm tra nếu tổng quota vượt quá 50GB
-      if (totalAfterCreate > MAX_TOTAL_QUOTA_GB) {
-        toast.error(
-          `Cannot create project! Total quota would be ${totalAfterCreate.toFixed(2)}GB (maximum: ${MAX_TOTAL_QUOTA_GB}GB). Available: ${getAvailableQuotaGB().toFixed(2)}GB`
-        );
-        setLoading(false);
-        return;
-      }
-
-      const res = await createProject(projectName, quota_bytes, description);
-
-      if (res.success) {
-        toast.success("Project created successfully!");
-        setShowCreateModal(false);
-        setNewProject({ name: '', description: '', quota: 10 });
-
-        const newProj = {
-          id: res.project?.id || Date.now(),
-          name: projectName,
-          description,
-          quota: quota_bytes,
-          used: 0,
-          containers: 0,
-          users: 0,
-          createdAt: new Date().toISOString().split('T')[0]
-        };
-        setProjects(prev => [...prev, newProj]);
-      } else {
-        toast.error(res.message || "Failed to create project");
-      }
-    } catch (error) {
-      console.error("Error creating project:", error);
-      toast.error("An error occurred while creating the project.");
-    } finally {
+    // Optional: Frontend validation for better UX
+    if (!projectName) {
+      toast.error("Project name cannot be empty!");
       setLoading(false);
+      return;
     }
-  };
+
+    if (newProject.quota <= 0) {
+      toast.error("Quota must be greater than 0!");
+      setLoading(false);
+      return;
+    }
+
+    // Check total quota limit
+    const totalCurrentQuotaGB = getTotalQuotaGB();
+    const newQuotaGB = newProject.quota;
+    const totalAfterCreate = totalCurrentQuotaGB + newQuotaGB;
+
+    if (totalAfterCreate > MAX_TOTAL_QUOTA_GB) {
+      toast.error(
+        `Cannot create project! Total quota would be ${totalAfterCreate.toFixed(2)}GB (maximum: ${MAX_TOTAL_QUOTA_GB}GB).`
+      );
+      setLoading(false);
+      return;
+    }
+
+    // Call API - backend will validate everything
+    const res = await createProject(projectName, quota_bytes, description);
+
+    if (res?.success) {
+      toast.success(res.message); // Backend message: "Project 'Production' created successfully."
+      setShowCreateModal(false);
+      setNewProject({ name: '', description: '', quota: 10 });
+
+      const newProj = {
+        id: res.project?.id || Date.now(),
+        name: projectName,
+        description,
+        quota: quota_bytes,
+        used: 0,
+        containers: 0,
+        users: 0,
+        createdAt: new Date().toISOString().split('T')[0]
+      };
+      setProjects(prev => [...prev, newProj]);
+    } else {
+      toast.error(res?.message || "Failed to create project.");
+    }
+  } catch (error) {
+    console.error("Error creating project:", error);
+    toast.error("An error occurred while creating the project.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   const isQuotaUpdateValid = () => {
   if (!quotaEdit.quota) return false;

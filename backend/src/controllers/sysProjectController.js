@@ -132,25 +132,53 @@ const createProject = async (req, res) => {
     const token = req.headers['x-auth-token'];
     const { projectName, description, quota_bytes } = req.body;
 
-    // Kiểm tra dữ liệu đầu vào
-    if (!projectName) {
-      return res.status(400).json({ success: false, message: 'Missing project name' });
-    }
-
-    if (quota_bytes && isNaN(quota_bytes)) {
-      return res.status(400).json({
-        success: false,
-        message: 'quota_bytes must be a valid number if provided',
+    // Validation: Project name required
+    if (!projectName || !projectName.trim()) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Project name is required.' 
       });
     }
 
-    // Tạo project trong Keystone
+    // Validation: quota_bytes must be number
+    if (quota_bytes && isNaN(quota_bytes)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Quota must be a valid number.',
+      });
+    }
+
+    const trimmedProjectName = projectName.trim();
+
+    // Check if project already exists
+    try {
+      const existingProjectsRes = await axios.get(`${KEYSTONE_URL}/projects`, {
+        headers: { 'X-Auth-Token': token },
+      });
+
+      const projects = existingProjectsRes.data.projects || [];
+      const duplicateProject = projects.find(
+        (p) => p.name.toLowerCase() === trimmedProjectName.toLowerCase()
+      );
+
+      if (duplicateProject) {
+        return res.status(409).json({
+          success: false,
+          message: `Project "${trimmedProjectName}" already exists.`,
+        });
+      }
+    } catch (error) {
+      console.error('Error checking existing projects:', error.message);
+      // Continue to create if we can't check (don't block)
+    }
+
+    // Create project in Keystone
     const payload = {
       project: {
-        name: projectName,
+        name: trimmedProjectName,
         enabled: true,
         domain_id: 'default',
-        description: description || '', // thêm description nếu có
+        description: description || '',
       },
     };
 
@@ -164,9 +192,9 @@ const createProject = async (req, res) => {
     const project = createRes.data.project;
     const projectId = project.id;
 
-    console.log(`Created project: ${projectName} (${projectId})`);
+    console.log(`Created project: ${trimmedProjectName} (${projectId})`);
 
-    // Nếu có quota_bytes => set quota trong Swift
+    // Set quota in Swift if provided
     if (quota_bytes) {
       const headers = {
         'X-Auth-Token': token,
@@ -176,30 +204,47 @@ const createProject = async (req, res) => {
       await axios.post(`${SWIFT_URL}/AUTH_${projectId}`, null, { headers });
 
       console.log(`Assigned quota ${quota_bytes} bytes for project ${projectId}`);
-    } else {
-      console.log('No quota assigned (quota_bytes not provided)');
     }
 
-  
     return res.status(201).json({
       success: true,
-      message: `Project "${projectName}" created successfully${quota_bytes ? ` with quota ${quota_bytes} bytes` : ''}`,
+      message: `Project "${trimmedProjectName}" created successfully.`,
       project: {
         id: projectId,
-        name: projectName,
+        name: trimmedProjectName,
         description: description || '',
         quota_bytes: quota_bytes || 'unlimited',
       },
     });
 
   } catch (error) {
-    console.error('Error while creating project with quota:', error.response?.data || error.message);
+    console.error('Error creating project:', error.response?.data || error.message);
+
+    // Handle specific Keystone errors
+    if (error.response?.data?.error?.message?.includes('Duplicate entry')) {
+      return res.status(409).json({
+        success: false,
+        message: `Project "${projectName}" already exists.`,
+      });
+    }
+
+    if (error.response?.status === 401) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized. Invalid authentication token.',
+      });
+    }
+
+    if (error.response?.status === 403) {
+      return res.status(403).json({
+        success: false,
+        message: 'Permission denied. You do not have permission to create projects.',
+      });
+    }
 
     return res.status(error.response?.status || 500).json({
       success: false,
-      message:
-        error.response?.data?.error?.message ||
-        'Cannot create project or assign quota.',
+      message: error.response?.data?.error?.message || 'Failed to create project.',
     });
   }
 };

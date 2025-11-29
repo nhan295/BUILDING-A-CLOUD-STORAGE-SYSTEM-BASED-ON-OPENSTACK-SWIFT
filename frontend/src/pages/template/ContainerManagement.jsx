@@ -107,68 +107,61 @@ export default function SwiftContainerList() {
   };
 
   const handleCreateContainer = async () => {
-    const name = newContainerName.trim();
-    if (!name) {
-      toast.error("Please enter a container name.");
-      return;
-    }
+  const name = newContainerName.trim();
+  
+  if (!name) {
+    toast.error("Please enter a container name.");
+    return;
+  }
 
-    if (containers.some((c) => c.name === name)) {
-      toast.info(`Container "${name}" already exists.`);
-      setNewContainerName("");
-      setShowCreateModal(false);
-      return;
-    }
+  try {
+    setIsCreating(true);
+    const res = await createContainer(name);
 
-    try {
-      setIsCreating(true);
-      const res = await createContainer(name);
-
-      if (res.success) {
-        const newContainer = {
-          name,
-          object: 0,
-          bytes: 0,
-          lastModified: new Date().toISOString().split("T")[0],
-        };
-        setContainers((prev) => [...prev, newContainer]);
-        toast.success(`Container "${name}" created successfully!`);
-      } else if (res.message?.toLowerCase().includes("exists")) {
-        toast.info(`Container "${name}" already exists.`);
-      } else {
-        toast.error(`Failed to create container: ${res.message || "Unknown error"}`);
-      }
-    } catch (error) {
-      console.error("Error creating container:", error);
-      toast.error("Failed to create container. Please try again.");
-    } finally {
-      setIsCreating(false);
-      setNewContainerName("");
-      setShowCreateModal(false);
+    if (res?.success) {
+      toast.success(res.message); 
+      
+      // Add new container to state
+      const newContainer = {
+        name,
+        object: 0,
+        bytes: 0,
+        lastModified: new Date().toISOString().split("T")[0],
+      };
+      setContainers((prev) => [...prev, newContainer]);
+    } else {
+      toast.error(res?.message || "Failed to create container.");
     }
-  };
+  } catch (error) {
+    console.error("Error creating container:", error);
+    toast.error("An error occurred while creating container.");
+  } finally {
+    setIsCreating(false);
+    setNewContainerName("");
+    setShowCreateModal(false);
+  }
+};
 
   // Delete single container
   const handleDeleteContainer = async (containerName) => {
-    if (
-      !window.confirm(
-        `Are you sure you want to delete container "${containerName}"?`
-      )
-    )
-      return;
-    try {
-      const response = await delContainer(containerName);
-      if (response?.success) {
-        toast.success(`Container "${containerName}" deleted successfully!`);
-        setContainers(containers.filter((c) => c.name !== containerName));
-      } else {
-        toast.error(`Delete failed: ${response?.message || "Unknown error"}`);
-      }
-    } catch (error) {
-      console.error("Error deleting container:", error);
-      toast.error("An error occurred while deleting the container!");
+  if (!window.confirm(`Are you sure you want to delete container "${containerName}"?`)) {
+    return;
+  }
+
+  try {
+    const response = await delContainer(containerName);
+
+    if (response?.success) {
+      toast.success(response.message); // Backend message: "Container 'images' deleted successfully."
+      setContainers(containers.filter((c) => c.name !== containerName));
+    } else {
+      toast.error(response?.message || "Failed to delete container.");
     }
-  };
+  } catch (error) {
+    console.error("Error deleting container:", error);
+    toast.error("An error occurred while deleting container.");
+  }
+};
 
   // Delete multiple containers
   const handleDeleteSelected = async () => {

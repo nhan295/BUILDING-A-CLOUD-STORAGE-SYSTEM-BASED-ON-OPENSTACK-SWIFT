@@ -11,15 +11,26 @@ export const getContainers = async()=>{
     }
 
 }
-export const createContainer = async(container)=>{
-    try{
-        const response = await api.post('/api/containers/create-container', {container})
-        return response.data;  
-    }catch(error){
-        console.error('Error while create container', error);
-        throw error; 
+
+export const createContainer = async (container) => {
+  try {
+    const response = await api.post('/api/containers/create-container', { container });
+    return response.data; // { success: true, message: "..." }
+  } catch (error) {
+    console.error('Error while creating container:', error);
+    
+    // Return error response from backend
+    if (error.response?.data) {
+      return error.response.data; // { success: false, message: "..." }
     }
-}
+    
+    // Network error or other errors
+    return {
+      success: false,
+      message: 'Network error. Please check your connection.',
+    };
+  }
+};
 
 export const uploadFile = async (container, file, setUploadProgress, replace = false) => {
   try {
@@ -56,20 +67,26 @@ export const uploadFile = async (container, file, setUploadProgress, replace = f
   }
 };
 
-export const delContainer = async(containerName)=>{
-  try{
-    const response = await api.delete(`/api/containers/delete-container/${containerName}`)
-    if(response.data.success){
-      return {
-        success: true,
-        message: response.data.message
-      };
+export const delContainer = async (containerName) => {
+  try {
+    const response = await api.delete(`/api/containers/delete-container/${containerName}`);
+    return response.data; 
+  } catch (error) {
+    console.error('Error while deleting container:', error);
+    
+    // Return error response từ backend
+    if (error.response?.data) {
+      return error.response.data; 
     }
-  }catch(error){
-    console.error('Error while delete container', error);
+    
+    // Network error
+    return {
+      success: false,
+      message: 'Network error. Please check your connection.',
+    };
   }
+};
 
-}
 export const downloadContainer = async(containerName) => {
   try {
     const response = await api.get(`/api/containers/download-container/${containerName}`, {
