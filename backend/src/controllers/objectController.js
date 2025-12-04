@@ -245,9 +245,70 @@ const downloadObject = async(req,res)=>{
   }
 }
 
+
+// MOVE = COPY + DELETE
+const moveObject = async (req, res) => {
+  try {
+    const { srcContainer, srcObject, destContainer, destObject } = req.body;
+
+    const token = req.token; 
+    const projectId = req.project.id;
+    const username = req.user?.username || "unknown";
+
+    if (!srcContainer || !srcObject || !destContainer || !destObject) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields.",
+      });
+    }
+
+    const copyUrl = `${SWIFT_URL}/AUTH_${projectId}/${srcContainer}/${encodeURIComponent(srcObject)}`;
+
+    // COPY
+    await axios({
+      method: "COPY",
+      url: copyUrl,
+      headers: {
+        "X-Auth-Token": token,
+        "Destination": `/${encodeURIComponent(destContainer)}/${encodeURIComponent(destObject)}`
+      }
+    });
+
+    // DELETE
+    const deleteUrl = `${SWIFT_URL}/AUTH_${projectId}/${srcContainer}/${encodeURIComponent(srcObject)}`;
+    await axios.delete(deleteUrl, { headers: { "X-Auth-Token": token } });
+
+    // LOG
+    logActivity(
+      username,
+      "Move",
+      `File ${srcObject} moved from ${srcContainer} to ${destContainer}`,
+      projectId
+    );
+
+    return res.json({
+      success: true,
+      message: "Object moved successfully.",
+      from: `${srcContainer}/${srcObject}`,
+      to: `${destContainer}/${destObject}`,
+    });
+
+  } catch (error) {
+    console.error("Move object error:", error.response?.data || error.message);
+    return res.status(error.response?.status || 500).json({
+      success: false,
+      message: "Failed to move object.",
+      error: error.response?.data || error.message,
+    });
+  }
+};
+
+
+
 module.exports = {
     getObject,
     delObject,
     newObject,
-    downloadObject
+    downloadObject,
+    moveObject
 }

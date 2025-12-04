@@ -13,5 +13,7 @@ module.exports.setup = (app) =>{
     router.post('/:container/upload',validateToken, upload.array('files',5),objectController.newObject);
     router.delete('/:container/:object',validateToken,objectController.delObject);
     router.get('/:container/:object/download',validateToken,objectController.downloadObject);
+    router.post("/move",validateToken, objectController.moveObject);
+
 }
 
