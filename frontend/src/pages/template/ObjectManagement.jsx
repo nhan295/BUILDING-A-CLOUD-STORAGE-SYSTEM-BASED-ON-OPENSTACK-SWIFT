@@ -8,6 +8,7 @@ import {
   Download,
   Eye,
   X,
+  Move,
 } from "lucide-react";
 import "../style/ObjectManagement.css";
 import {
@@ -15,6 +16,8 @@ import {
   uploadFile,
   deleteObject,
   downloadObject,
+  moveObject,
+  getContainers,
 } from "../logic/ObjectManagement.js";
 import { getStoredRoles } from "../../pages/logic/Login";
 import { toast } from "react-toastify";
@@ -25,7 +28,10 @@ export default function ObjectManagement() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState([]);
-  const [selectedObjects, setSelectedObjects] = useState([]); // Danh sách object được chọn
+  const [selectedObjects, setSelectedObjects] = useState([]);
+  const [showMoveModal, setShowMoveModal] = useState(false);
+  const [destContainer, setDestContainer] = useState("");
+  const [containers, setContainers] = useState([]);
   const { containerName } = useParams();
 
   const roles = getStoredRoles() || [];
@@ -54,171 +60,190 @@ export default function ObjectManagement() {
     fetchObjects();
   }, [containerName]);
 
+  // Fetch danh sách containers
+  useEffect(() => {
+    const fetchContainers = async () => {
+      try {
+        console.log('🔍 Fetching containers...');
+        const data = await getContainers();
+        console.log('📦 Containers response:', data);
+        
+        if (data.success && data.containers) {
+          const containerNames = data.containers.map(c => c.name);
+          console.log('✅ Container names:', containerNames);
+          setContainers(containerNames);
+        } else {
+          console.error('❌ Invalid response format:', data);
+          toast.error("Failed to load containers list.");
+        }
+      } catch (error) {
+        console.error("❌ Failed to fetch containers:", error);
+        console.error("Error details:", error.response?.data || error.message);
+        
+        // Fallback: dùng mock data để test UI
+        console.log("⚠️ Using mock data for testing");
+        setContainers(["test-container-1", "test-container-2", "test-container-3"]);
+        
+        toast.error("Failed to load containers list: " + error.message);
+      }
+    };
+    fetchContainers();
+  }, []);
+
   const handleFileUpload = async (e) => {
-  const files = Array.from(e.target.files);
-  if (files.length === 0) return;
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
 
-  try {
-    setIsUploading(true);
-    
-    const fileList = files.map((file, index) => ({
-      id: `${Date.now()}-${index}`,
-      name: file.name,
-      progress: 0,
-      status: 'uploading'
-    }));
-    setUploadingFiles(fileList);
+    try {
+      setIsUploading(true);
+      
+      const fileList = files.map((file, index) => ({
+        id: `${Date.now()}-${index}`,
+        name: file.name,
+        progress: 0,
+        status: 'uploading'
+      }));
+      setUploadingFiles(fileList);
 
-    const progressInterval = setInterval(() => {
-      setUploadingFiles(prev => 
-        prev.map(file => {
-          if (file.status === 'uploading' && file.progress < 90) {
-            return { ...file, progress: Math.min(file.progress + 10, 90) };
-          }
-          return file;
-        })
-      );
-    }, 300);
-
-    // Upload lần đầu (replace=false)
-    const response = await uploadFile(containerName, files, () => {});
-
-    clearInterval(progressInterval);
-
-    //  Check response.results thay vì chỉ response.success
-    console.log('Upload response:', response);
-
-    if (!response.success) {
-      // Upload thất bại hoàn toàn
-      toast.error("Upload failed: " + response.message);
-      setUploadingFiles(prev =>
-        prev.map(file => ({ ...file, progress: 100, status: 'error' }))
-      );
-      setIsUploading(false);
-      setTimeout(() => setUploadingFiles([]), 1500);
-      return;
-    }
-
-    //  Check có file trùng không
-    const duplicateFiles = response.results?.filter(
-      r => !r.success && r.message?.includes('already exists')
-    ) || [];
-
-    console.log('Duplicate files:', duplicateFiles);
-
-    if (duplicateFiles.length > 0) {
-      //  CÓ FILE TRÙNG - Hỏi user
-      const fileNames = duplicateFiles.map(f => f.name).join('\n');
-      const confirmReplace = window.confirm(
-        `The following file(s) already exist:\n${fileNames}\n\nDo you want to overwrite them?`
-      );
-
-      if (confirmReplace) {
-        // User chọn ghi đè
-        setUploadingFiles(prev =>
+      const progressInterval = setInterval(() => {
+        setUploadingFiles(prev => 
           prev.map(file => {
-            const isDuplicate = duplicateFiles.some(d => d.name === file.name);
-            return isDuplicate 
-              ? { ...file, progress: 0, status: 'uploading' }
-              : { ...file, progress: 100, status: 'success' };
+            if (file.status === 'uploading' && file.progress < 90) {
+              return { ...file, progress: Math.min(file.progress + 10, 90) };
+            }
+            return file;
           })
         );
+      }, 300);
 
-        // Chỉ upload lại files bị trùng
-        const filesToReplace = files.filter(file =>
-          duplicateFiles.some(d => d.name === file.name)
+      const response = await uploadFile(containerName, files, () => {});
+
+      clearInterval(progressInterval);
+
+      console.log('Upload response:', response);
+
+      if (!response.success) {
+        toast.error("Upload failed: " + response.message);
+        setUploadingFiles(prev =>
+          prev.map(file => ({ ...file, progress: 100, status: 'error' }))
+        );
+        setIsUploading(false);
+        setTimeout(() => setUploadingFiles([]), 1500);
+        return;
+      }
+
+      const duplicateFiles = response.results?.filter(
+        r => !r.success && r.message?.includes('already exists')
+      ) || [];
+
+      console.log('Duplicate files:', duplicateFiles);
+
+      if (duplicateFiles.length > 0) {
+        const fileNames = duplicateFiles.map(f => f.name).join('\n');
+        const confirmReplace = window.confirm(
+          `The following file(s) already exist:\n${fileNames}\n\nDo you want to overwrite them?`
         );
 
-        const retryInterval = setInterval(() => {
+        if (confirmReplace) {
           setUploadingFiles(prev =>
             prev.map(file => {
               const isDuplicate = duplicateFiles.some(d => d.name === file.name);
-              if (isDuplicate && file.status === 'uploading' && file.progress < 90) {
-                return { ...file, progress: Math.min(file.progress + 10, 90) };
-              }
-              return file;
+              return isDuplicate 
+                ? { ...file, progress: 0, status: 'uploading' }
+                : { ...file, progress: 100, status: 'success' };
             })
           );
-        }, 300);
 
-        // Upload với replace=true
-        const replaceRes = await uploadFile(containerName, filesToReplace, () => {}, true);
-        clearInterval(retryInterval);
-
-        if (replaceRes.success) {
-          toast.success('File(s) overwritten successfully!');
-          setUploadingFiles(prev =>
-            prev.map(file => {
-              const replaceResult = replaceRes.results?.find(r => r.name === file.name && r.success);
-              if (replaceResult) {
-                return { ...file, progress: 100, status: 'success' };
-              }
-              return file;
-            })
+          const filesToReplace = files.filter(file =>
+            duplicateFiles.some(d => d.name === file.name)
           );
+
+          const retryInterval = setInterval(() => {
+            setUploadingFiles(prev =>
+              prev.map(file => {
+                const isDuplicate = duplicateFiles.some(d => d.name === file.name);
+                if (isDuplicate && file.status === 'uploading' && file.progress < 90) {
+                  return { ...file, progress: Math.min(file.progress + 10, 90) };
+                }
+                return file;
+              })
+            );
+          }, 300);
+
+          const replaceRes = await uploadFile(containerName, filesToReplace, () => {}, true);
+          clearInterval(retryInterval);
+
+          if (replaceRes.success) {
+            toast.success('File(s) overwritten successfully!');
+            setUploadingFiles(prev =>
+              prev.map(file => {
+                const replaceResult = replaceRes.results?.find(r => r.name === file.name && r.success);
+                if (replaceResult) {
+                  return { ...file, progress: 100, status: 'success' };
+                }
+                return file;
+              })
+            );
+          } else {
+            toast.error('Overwrite failed: ' + replaceRes.message);
+            setUploadingFiles(prev =>
+              prev.map(file => {
+                const isDuplicate = duplicateFiles.some(d => d.name === file.name);
+                return isDuplicate
+                  ? { ...file, progress: 100, status: 'error' }
+                  : file;
+              })
+            );
+          }
         } else {
-          toast.error('Overwrite failed: ' + replaceRes.message);
+          toast.info('Overwrite canceled.');
           setUploadingFiles(prev =>
             prev.map(file => {
               const isDuplicate = duplicateFiles.some(d => d.name === file.name);
+              const successFile = response.results?.find(r => r.name === file.name && r.success);
               return isDuplicate
                 ? { ...file, progress: 100, status: 'error' }
-                : file;
+                : { ...file, progress: 100, status: successFile ? 'success' : 'error' };
             })
           );
         }
       } else {
-        // User không muốn ghi đè
-        toast.info('Overwrite canceled.');
+        toast.success("Files uploaded successfully!");
         setUploadingFiles(prev =>
-          prev.map(file => {
-            const isDuplicate = duplicateFiles.some(d => d.name === file.name);
-            const successFile = response.results?.find(r => r.name === file.name && r.success);
-            return isDuplicate
-              ? { ...file, progress: 100, status: 'error' }
-              : { ...file, progress: 100, status: successFile ? 'success' : 'error' };
-          })
+          prev.map(file => ({ ...file, progress: 100, status: 'success' }))
         );
       }
-    } else {
-      
-      toast.success("Files uploaded successfully!");
-      setUploadingFiles(prev =>
-        prev.map(file => ({ ...file, progress: 100, status: 'success' }))
+
+      setIsUploading(false);
+
+      setTimeout(() => {
+        setUploadingFiles([]);
+      }, 1500);
+
+      const updatedData = await getObject(containerName);
+      setObjects(
+        updatedData.map((obj, index) => ({
+          id: index + 1,
+          name: obj.name,
+          size: (obj.size / (1024 * 1024)).toFixed(2) + " MB",
+          upload_at: new Date(obj.upload_at).toISOString().split("T")[0],
+          type: obj.name.split(".").pop(),
+          owner: obj.upload_by || "unknown",
+        }))
       );
+
+    } catch (error) {
+      console.error("Error uploading files:", error);
+      toast.error("Upload failed.");
+      setUploadingFiles(prev =>
+        prev.map(file => ({ ...file, status: 'error', progress: 100 }))
+      );
+      setIsUploading(false);
+      setTimeout(() => {
+        setUploadingFiles([]);
+      }, 2000);
     }
-
-    setIsUploading(false);
-
-    setTimeout(() => {
-      setUploadingFiles([]);
-    }, 1500);
-
-    // Reload danh sách files
-    const updatedData = await getObject(containerName);
-    setObjects(
-      updatedData.map((obj, index) => ({
-        id: index + 1,
-        name: obj.name,
-        size: (obj.size / (1024 * 1024)).toFixed(2) + " MB",
-        upload_at: new Date(obj.upload_at).toISOString().split("T")[0],
-        type: obj.name.split(".").pop(),
-        owner: obj.upload_by || "unknown",
-      }))
-    );
-
-  } catch (error) {
-    console.error("Error uploading files:", error);
-    toast.error("Upload failed.");
-    setUploadingFiles(prev =>
-      prev.map(file => ({ ...file, status: 'error', progress: 100 }))
-    );
-    setIsUploading(false);
-    setTimeout(() => {
-      setUploadingFiles([]);
-    }, 2000);
-  }
-};
+  };
 
   const handleDeleteObject = async (containerName, objectName) => {
     if (
@@ -241,7 +266,6 @@ export default function ObjectManagement() {
     }
   };
 
-  // Xóa nhiều file cùng lúc
   const handleDeleteSelected = async () => {
     if (selectedObjects.length === 0) {
       toast.warn("Please select files to delete.");
@@ -259,7 +283,6 @@ export default function ObjectManagement() {
       let successCount = 0;
       let failCount = 0;
 
-      // Xóa từng file
       for (const objectName of selectedObjects) {
         try {
           const response = await deleteObject(containerName, objectName);
@@ -274,13 +297,11 @@ export default function ObjectManagement() {
         }
       }
 
-      // Cập nhật danh sách objects
       setObjects((prev) =>
         prev.filter((obj) => !selectedObjects.includes(obj.name))
       );
       setSelectedObjects([]);
 
-      // Hiển thị kết quả
       if (successCount > 0) {
         toast.success(`Deleted ${successCount} file(s) successfully!`);
       }
@@ -290,6 +311,70 @@ export default function ObjectManagement() {
     } catch (error) {
       console.error("Error deleting files:", error);
       toast.error("An error occurred while deleting files!");
+    }
+  };
+
+  // Hàm mở modal move
+  const handleOpenMoveModal = () => {
+    if (selectedObjects.length === 0) {
+      toast.warn("Please select files to move.");
+      return;
+    }
+    setShowMoveModal(true);
+  };
+
+  // Hàm move objects (1 hoặc nhiều)
+  const handleMoveObjects = async () => {
+    if (!destContainer) {
+      toast.warn("Please select a destination container.");
+      return;
+    }
+
+    if (destContainer === containerName) {
+      toast.warn("Cannot move to the same container.");
+      return;
+    }
+
+    try {
+      let successCount = 0;
+      let failCount = 0;
+
+      for (const objectName of selectedObjects) {
+        try {
+          const response = await moveObject(
+            containerName,
+            objectName,
+            destContainer
+          );
+          if (response?.success) {
+            successCount++;
+          } else {
+            failCount++;
+          }
+        } catch (error) {
+          console.error(`Error moving ${objectName}:`, error);
+          failCount++;
+        }
+      }
+
+      // Cập nhật danh sách objects (xóa các file đã move)
+      setObjects((prev) =>
+        prev.filter((obj) => !selectedObjects.includes(obj.name))
+      );
+      setSelectedObjects([]);
+      setShowMoveModal(false);
+      setDestContainer("");
+
+      // Hiển thị kết quả
+      if (successCount > 0) {
+        toast.success(`Moved ${successCount} file(s) to ${destContainer} successfully!`);
+      }
+      if (failCount > 0) {
+        toast.error(`Failed to move ${failCount} file(s).`);
+      }
+    } catch (error) {
+      console.error("Error moving files:", error);
+      toast.error("An error occurred while moving files!");
     }
   };
 
@@ -305,7 +390,6 @@ export default function ObjectManagement() {
 
   const handleView = (file) => setSelectedFile(file);
 
-  // Chọn/bỏ chọn 1 object
   const handleSelectObject = (objectName) => {
     setSelectedObjects((prev) =>
       prev.includes(objectName)
@@ -314,7 +398,6 @@ export default function ObjectManagement() {
     );
   };
 
-  // Chọn/bỏ chọn tất cả
   const handleSelectAll = (e) => {
     if (e.target.checked) {
       setSelectedObjects(filteredFiles.map((obj) => obj.name));
@@ -365,13 +448,23 @@ export default function ObjectManagement() {
               </label>
 
               {selectedObjects.length > 0 && (
-                <button
-                  className="fm-delete-selected-btn"
-                  onClick={handleDeleteSelected}
-                >
-                  <Trash2 size={20} />
-                  <span>Delete ({selectedObjects.length})</span>
-                </button>
+                <>
+                  <button
+                    className="fm-move-selected-btn"
+                    onClick={handleOpenMoveModal}
+                  >
+                    <Move size={20} />
+                    <span>Move ({selectedObjects.length})</span>
+                  </button>
+
+                  <button
+                    className="fm-delete-selected-btn"
+                    onClick={handleDeleteSelected}
+                  >
+                    <Trash2 size={20} />
+                    <span>Delete ({selectedObjects.length})</span>
+                  </button>
+                </>
               )}
             </>
           )}
@@ -417,6 +510,92 @@ export default function ObjectManagement() {
                 <div className="fm-progress-text">{file.progress}%</div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Move Modal */}
+      {showMoveModal && (
+        <div className="fm-modal-overlay" onClick={() => setShowMoveModal(false)}>
+          <div className="fm-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="fm-modal-header">
+              <h3>Move {selectedObjects.length} file(s)</h3>
+              <button
+                className="fm-modal-close"
+                onClick={() => setShowMoveModal(false)}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="fm-modal-body">
+              <label>Select destination container:</label>
+              <select
+                value={destContainer}
+                onChange={(e) => {
+                  console.log('Selected container:', e.target.value);
+                  setDestContainer(e.target.value);
+                }}
+                className="fm-select"
+              >
+                <option value="">-- Select Container --</option>
+                {(() => {
+                  const availableContainers = containers.filter((c) => c !== containerName);
+                  console.log('Available containers for dropdown:', availableContainers);
+                  console.log('Current container name:', containerName);
+                  console.log('All containers:', containers);
+                  
+                  if (availableContainers.length === 0) {
+                    return <option disabled>No other containers available</option>;
+                  }
+                  
+                  return availableContainers.map((container) => (
+                    <option key={container} value={container}>
+                      {container}
+                    </option>
+                  ));
+                })()}
+              </select>
+              
+              {/* Debug info - always show in development */}
+              <div style={{ 
+                marginTop: '10px', 
+                padding: '10px', 
+                background: '#f0f0f0', 
+                borderRadius: '4px',
+                fontSize: '12px', 
+                color: '#666' 
+              }}>
+                <div><strong>Debug Info:</strong></div>
+                <div>Total containers: {containers.length}</div>
+                <div>Current container: "{containerName}"</div>
+                <div>Available to move: {containers.filter(c => c !== containerName).length}</div>
+                <div>Containers list: {containers.join(', ')}</div>
+              </div>
+              
+              <div className="fm-selected-files">
+                <p>Files to move:</p>
+                <ul>
+                  {selectedObjects.map((obj) => (
+                    <li key={obj}>{obj}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+            <div className="fm-modal-footer">
+              <button
+                className="fm-btn-cancel"
+                onClick={() => setShowMoveModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="fm-btn-confirm"
+                onClick={handleMoveObjects}
+                disabled={!destContainer}
+              >
+                Move
+              </button>
+            </div>
           </div>
         </div>
       )}

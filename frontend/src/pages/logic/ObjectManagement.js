@@ -8,6 +8,16 @@ export const getObject = async(containerName)=>{
     }
 }
 
+export const getContainers = async()=>{
+    try{
+        const response = await api.get('/api/containers/')
+        return response.data || [];
+    }catch(error){
+        console.error('Error while get container list', error);
+    }
+
+}
+
 export const uploadFile = async (container, files, setUploadProgress, replace = false) => {
   try {
     const formData = new FormData();
@@ -42,8 +52,6 @@ export const uploadFile = async (container, files, setUploadProgress, replace = 
   }
 };
 
-
-
 export const deleteObject = async (containerName, objectName) => {
     try{
         const response = await api.delete(`/api/object/${containerName}/${objectName}`);
@@ -77,3 +85,28 @@ export const downloadObject = async(containerName,objectName)=>{
     alert('Cannot download object!');
   }
 }
+
+export const moveObject = async (srcContainer, srcObject, destContainer, destObject = null) => {
+  try {
+    // Nếu không truyền destObject → giữ nguyên tên file
+    const finalDestObject = destObject || srcObject;
+
+    const response = await api.post("/api/object/move", {
+      srcContainer,
+      srcObject,
+      destContainer,
+      destObject: finalDestObject
+    });
+
+    return response.data;
+
+  } catch (error) {
+    console.error("Move object failed:", error.response?.data || error.message);
+
+    return {
+      success: false,
+      message: "Failed to move object.",
+      error: error.response?.data || error.message
+    };
+  }
+};

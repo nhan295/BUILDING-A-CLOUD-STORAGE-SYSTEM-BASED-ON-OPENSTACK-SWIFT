@@ -255,12 +255,15 @@ const moveObject = async (req, res) => {
     const projectId = req.project.id;
     const username = req.user?.username || "unknown";
 
-    if (!srcContainer || !srcObject || !destContainer || !destObject) {
+    if (!srcContainer || !srcObject || !destContainer) {
       return res.status(400).json({
         success: false,
         message: "Missing required fields.",
       });
     }
+
+    // Nếu không truyền destObject → giữ nguyên tên file
+    const finalDestObject = destObject || srcObject;
 
     const copyUrl = `${SWIFT_URL}/AUTH_${projectId}/${srcContainer}/${encodeURIComponent(srcObject)}`;
 
@@ -270,11 +273,11 @@ const moveObject = async (req, res) => {
       url: copyUrl,
       headers: {
         "X-Auth-Token": token,
-        "Destination": `/${encodeURIComponent(destContainer)}/${encodeURIComponent(destObject)}`
+        "Destination": `/${encodeURIComponent(destContainer)}/${encodeURIComponent(finalDestObject)}`
       }
     });
 
-    // DELETE
+    // DELETE source
     const deleteUrl = `${SWIFT_URL}/AUTH_${projectId}/${srcContainer}/${encodeURIComponent(srcObject)}`;
     await axios.delete(deleteUrl, { headers: { "X-Auth-Token": token } });
 
@@ -290,7 +293,7 @@ const moveObject = async (req, res) => {
       success: true,
       message: "Object moved successfully.",
       from: `${srcContainer}/${srcObject}`,
-      to: `${destContainer}/${destObject}`,
+      to: `${destContainer}/${finalDestObject}`,
     });
 
   } catch (error) {
@@ -302,7 +305,6 @@ const moveObject = async (req, res) => {
     });
   }
 };
-
 
 
 module.exports = {
