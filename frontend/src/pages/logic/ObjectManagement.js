@@ -86,16 +86,16 @@ export const downloadObject = async(containerName,objectName)=>{
   }
 }
 
-export const moveObject = async (srcContainer, srcObject, destContainer, destObject = null) => {
+export const moveObject = async (srcContainer, srcObject, destContainer, destObject = null, overwrite = false) => {
   try {
-    // Nếu không truyền destObject → giữ nguyên tên file
     const finalDestObject = destObject || srcObject;
 
     const response = await api.post("/api/object/move", {
       srcContainer,
       srcObject,
       destContainer,
-      destObject: finalDestObject
+      destObject: finalDestObject,
+      overwrite
     });
 
     return response.data;
@@ -103,9 +103,19 @@ export const moveObject = async (srcContainer, srcObject, destContainer, destObj
   } catch (error) {
     console.error("Move object failed:", error.response?.data || error.message);
 
+    // Kiểm tra nếu lỗi là do file đã tồn tại (status 409)
+    if (error.response?.status === 409 || error.response?.data?.code === 'FILE_EXISTS') {
+      return {
+        success: false,
+        fileExists: true,
+        message: error.response?.data?.message || "File already exists in destination container.",
+        error: error.response?.data
+      };
+    }
+
     return {
       success: false,
-      message: "Failed to move object.",
+      message: error.response?.data?.message || "Failed to move object.",
       error: error.response?.data || error.message
     };
   }

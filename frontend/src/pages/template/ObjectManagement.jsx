@@ -37,7 +37,6 @@ export default function ObjectManagement() {
   const roles = getStoredRoles() || [];
   const isAdmin = roles.includes("admin");
   const isMember = roles.includes("member");
-
   const isPrivileged = isAdmin || isMember;
 
   useEffect(() => {
@@ -60,30 +59,18 @@ export default function ObjectManagement() {
     fetchObjects();
   }, [containerName]);
 
-  // Fetch danh sách containers
   useEffect(() => {
     const fetchContainers = async () => {
       try {
-        console.log('🔍 Fetching containers...');
         const data = await getContainers();
-        console.log('📦 Containers response:', data);
-        
         if (data.success && data.containers) {
           const containerNames = data.containers.map(c => c.name);
-          console.log('✅ Container names:', containerNames);
           setContainers(containerNames);
         } else {
-          console.error('❌ Invalid response format:', data);
           toast.error("Failed to load containers list.");
         }
       } catch (error) {
-        console.error("❌ Failed to fetch containers:", error);
-        console.error("Error details:", error.response?.data || error.message);
-        
-        // Fallback: dùng mock data để test UI
-        console.log("⚠️ Using mock data for testing");
-        setContainers(["test-container-1", "test-container-2", "test-container-3"]);
-        
+        console.error("Failed to fetch containers:", error);
         toast.error("Failed to load containers list: " + error.message);
       }
     };
@@ -117,10 +104,7 @@ export default function ObjectManagement() {
       }, 300);
 
       const response = await uploadFile(containerName, files, () => {});
-
       clearInterval(progressInterval);
-
-      console.log('Upload response:', response);
 
       if (!response.success) {
         toast.error("Upload failed: " + response.message);
@@ -135,8 +119,6 @@ export default function ObjectManagement() {
       const duplicateFiles = response.results?.filter(
         r => !r.success && r.message?.includes('already exists')
       ) || [];
-
-      console.log('Duplicate files:', duplicateFiles);
 
       if (duplicateFiles.length > 0) {
         const fileNames = duplicateFiles.map(f => f.name).join('\n');
@@ -215,10 +197,7 @@ export default function ObjectManagement() {
       }
 
       setIsUploading(false);
-
-      setTimeout(() => {
-        setUploadingFiles([]);
-      }, 1500);
+      setTimeout(() => setUploadingFiles([]), 1500);
 
       const updatedData = await getObject(containerName);
       setObjects(
@@ -239,9 +218,7 @@ export default function ObjectManagement() {
         prev.map(file => ({ ...file, status: 'error', progress: 100 }))
       );
       setIsUploading(false);
-      setTimeout(() => {
-        setUploadingFiles([]);
-      }, 2000);
+      setTimeout(() => setUploadingFiles([]), 2000);
     }
   };
 
@@ -314,7 +291,6 @@ export default function ObjectManagement() {
     }
   };
 
-  // Hàm mở modal move
   const handleOpenMoveModal = () => {
     if (selectedObjects.length === 0) {
       toast.warn("Please select files to move.");
@@ -323,7 +299,7 @@ export default function ObjectManagement() {
     setShowMoveModal(true);
   };
 
-  // Hàm move objects (1 hoặc nhiều)
+  // Hàm move với xử lý overwrite
   const handleMoveObjects = async () => {
     if (!destContainer) {
       toast.warn("Please select a destination container.");
@@ -338,16 +314,24 @@ export default function ObjectManagement() {
     try {
       let successCount = 0;
       let failCount = 0;
+      const conflictFiles = []; // Lưu các file bị conflict
 
+      // Bước 1: Thử move tất cả file (overwrite = false)
       for (const objectName of selectedObjects) {
         try {
           const response = await moveObject(
             containerName,
             objectName,
-            destContainer
+            destContainer,
+            null, // giữ nguyên tên
+            false // không overwrite
           );
+
           if (response?.success) {
             successCount++;
+          } else if (response?.fileExists) {
+            // File bị trùng, lưu lại để xử lý sau
+            conflictFiles.push(objectName);
           } else {
             failCount++;
           }
@@ -357,21 +341,65 @@ export default function ObjectManagement() {
         }
       }
 
-      // Cập nhật danh sách objects (xóa các file đã move)
-      setObjects((prev) =>
-        prev.filter((obj) => !selectedObjects.includes(obj.name))
+      // Bước 2: Nếu có file conflict, hỏi user
+      if (conflictFiles.length > 0) {
+        const fileNames = conflictFiles.join('\n');
+        const confirmOverwrite = window.confirm(
+          `The following ${conflictFiles.length} file(s) already exist in "${destContainer}":\n\n${fileNames}\n\nDo you want to overwrite them?`
+        );
+
+        if (confirmOverwrite) {
+          // Move lại các file conflict với overwrite = true
+          for (const objectName of conflictFiles) {
+            try {
+              const response = await moveObject(
+                containerName,
+                objectName,
+                destContainer,
+                null,
+                true // overwrite = true
+              );
+
+              if (response?.success) {
+                successCount++;
+              } else {
+                failCount++;
+              }
+            } catch (error) {
+              console.error(`Error overwriting ${objectName}:`, error);
+              failCount++;
+            }
+          }
+        } else {
+          // User không muốn overwrite
+          toast.info(`${conflictFiles.length} file(s) were not moved (already exist).`);
+          failCount += conflictFiles.length;
+        }
+      }
+
+      // Bước 3: Cập nhật UI
+      // Xóa các file đã move thành công khỏi danh sách
+      const movedFiles = selectedObjects.filter(
+        name => !conflictFiles.includes(name) || 
+        (conflictFiles.includes(name) && successCount > 0)
       );
+
+      setObjects((prev) =>
+        prev.filter((obj) => !movedFiles.includes(obj.name))
+      );
+      
       setSelectedObjects([]);
       setShowMoveModal(false);
       setDestContainer("");
 
       // Hiển thị kết quả
       if (successCount > 0) {
-        toast.success(`Moved ${successCount} file(s) to ${destContainer} successfully!`);
+        toast.success(`Moved ${successCount} file(s) to "${destContainer}" successfully!`);
       }
       if (failCount > 0) {
         toast.error(`Failed to move ${failCount} file(s).`);
       }
+
     } catch (error) {
       console.error("Error moving files:", error);
       toast.error("An error occurred while moving files!");
@@ -531,46 +559,18 @@ export default function ObjectManagement() {
               <label>Select destination container:</label>
               <select
                 value={destContainer}
-                onChange={(e) => {
-                  console.log('Selected container:', e.target.value);
-                  setDestContainer(e.target.value);
-                }}
+                onChange={(e) => setDestContainer(e.target.value)}
                 className="fm-select"
               >
                 <option value="">-- Select Container --</option>
-                {(() => {
-                  const availableContainers = containers.filter((c) => c !== containerName);
-                  console.log('Available containers for dropdown:', availableContainers);
-                  console.log('Current container name:', containerName);
-                  console.log('All containers:', containers);
-                  
-                  if (availableContainers.length === 0) {
-                    return <option disabled>No other containers available</option>;
-                  }
-                  
-                  return availableContainers.map((container) => (
+                {containers
+                  .filter((c) => c !== containerName)
+                  .map((container) => (
                     <option key={container} value={container}>
                       {container}
                     </option>
-                  ));
-                })()}
+                  ))}
               </select>
-              
-              {/* Debug info - always show in development */}
-              <div style={{ 
-                marginTop: '10px', 
-                padding: '10px', 
-                background: '#f0f0f0', 
-                borderRadius: '4px',
-                fontSize: '12px', 
-                color: '#666' 
-              }}>
-                <div><strong>Debug Info:</strong></div>
-                <div>Total containers: {containers.length}</div>
-                <div>Current container: "{containerName}"</div>
-                <div>Available to move: {containers.filter(c => c !== containerName).length}</div>
-                <div>Containers list: {containers.join(', ')}</div>
-              </div>
               
               <div className="fm-selected-files">
                 <p>Files to move:</p>

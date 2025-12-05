@@ -249,7 +249,7 @@ const downloadObject = async(req,res)=>{
 // MOVE = COPY + DELETE
 const moveObject = async (req, res) => {
   try {
-    const { srcContainer, srcObject, destContainer, destObject } = req.body;
+    const { srcContainer, srcObject, destContainer, destObject, overwrite } = req.body;
 
     const token = req.token; 
     const projectId = req.project.id;
@@ -262,12 +262,39 @@ const moveObject = async (req, res) => {
       });
     }
 
-    // Nếu không truyền destObject → giữ nguyên tên file
     const finalDestObject = destObject || srcObject;
 
-    const copyUrl = `${SWIFT_URL}/AUTH_${projectId}/${srcContainer}/${encodeURIComponent(srcObject)}`;
+    // CHECK file đích có tồn tại không
+    const checkUrl = `${SWIFT_URL}/AUTH_${projectId}/${destContainer}/${encodeURIComponent(finalDestObject)}`;
+    
+    try {
+      await axios.head(checkUrl, { 
+        headers: { "X-Auth-Token": token } 
+      });
+      
+      // Nếu HEAD thành công = file đã tồn tại
+      if (!overwrite) {
+        return res.status(409).json({
+          success: false,
+          code: "FILE_EXISTS",
+          message: `File "${finalDestObject}" already exists in container "${destContainer}".`,
+          fileExists: true
+        });
+      }
+      
+      // Nếu overwrite = true, tiếp tục move (sẽ ghi đè)
+      
+    } catch (headError) {
+      // Nếu HEAD lỗi 404 = file chưa tồn tại → OK, tiếp tục
+      if (headError.response?.status !== 404) {
+        // Lỗi khác 404 thì throw lên
+        throw headError;
+      }
+    }
 
     // COPY
+    const copyUrl = `${SWIFT_URL}/AUTH_${projectId}/${srcContainer}/${encodeURIComponent(srcObject)}`;
+    
     await axios({
       method: "COPY",
       url: copyUrl,
@@ -279,13 +306,15 @@ const moveObject = async (req, res) => {
 
     // DELETE source
     const deleteUrl = `${SWIFT_URL}/AUTH_${projectId}/${srcContainer}/${encodeURIComponent(srcObject)}`;
-    await axios.delete(deleteUrl, { headers: { "X-Auth-Token": token } });
+    await axios.delete(deleteUrl, { 
+      headers: { "X-Auth-Token": token } 
+    });
 
     // LOG
     logActivity(
       username,
       "Move",
-      `File ${srcObject} moved from ${srcContainer} to ${destContainer}`,
+      `File ${srcObject} moved from ${srcContainer} to ${destContainer}${overwrite ? ' (overwrite)' : ''}`,
       projectId
     );
 
@@ -294,6 +323,7 @@ const moveObject = async (req, res) => {
       message: "Object moved successfully.",
       from: `${srcContainer}/${srcObject}`,
       to: `${destContainer}/${finalDestObject}`,
+      overwritten: overwrite || false
     });
 
   } catch (error) {
