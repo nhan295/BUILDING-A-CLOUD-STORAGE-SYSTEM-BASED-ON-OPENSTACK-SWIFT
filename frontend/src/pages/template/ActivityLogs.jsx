@@ -56,6 +56,7 @@ export default function ActivityLogs() {
     if (a.includes('download')) return 'download';
     if (a.includes('delete')) return 'delete';
     if (a.includes('create')) return 'create';
+    if (a.includes('move')) return 'move';
     return 'other';
   };
 
@@ -148,6 +149,7 @@ export default function ActivityLogs() {
                 <option value="upload">Upload</option>
                 <option value="delete">Delete</option>
                 <option value="create">Create</option>
+                <option value="move">Move</option>
                 
               </select>
             </div>

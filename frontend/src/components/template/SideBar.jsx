@@ -74,7 +74,7 @@ export default function SideBar() {
               onClick={() => handleLinkClick('project-manager', '/project-manager')}
             >
               <FolderKanban size={18} />
-              <span>Projects</span>
+              <span>Projects Management</span>
             </button>
 
             <button
