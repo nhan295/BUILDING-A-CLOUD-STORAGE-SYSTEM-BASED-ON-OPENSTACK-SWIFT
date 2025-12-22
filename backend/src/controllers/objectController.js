@@ -229,10 +229,14 @@ const downloadObject = async(req,res)=>{
 
     // Retrieve the file name and file type to set the appropriate headers
     const fileName = object.split('/').pop();
+
+    //Get content type from Swift response
     const contentType = response.headers['content-type'] || 'application/octet-stream';
 
     res.setHeader('Content-Type', contentType);
     res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+
+    //Send file data to client
     res.send(response.data);
 
   } catch (err) {

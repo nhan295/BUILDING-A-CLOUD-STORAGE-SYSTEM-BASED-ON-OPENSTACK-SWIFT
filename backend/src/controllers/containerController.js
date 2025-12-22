@@ -15,7 +15,7 @@ const getContainers = async (req, res) => {
 
     const containers = response.data; // Swift return type [{name, count, bytes}, ...]
 
-    //  get more details for each container
+    //  iterates over the list of containers to get more details for each container
     const detailedContainers = await Promise.all(
       containers.map(async (container) => {
         try {
@@ -92,11 +92,11 @@ const delContainer = async (req, res) => {
       success: true,
       message:
         objects.length > 0
-          ? `Đã xóa toàn bộ ${objects.length} object và container "${containerName}".`
-          : `Container "${containerName}" đã bị xóa.`,
+          ? `Deleted ${objects.length} object và container "${containerName}".`
+          : `Container "${containerName}" deleted successfully.`,
     });
   } catch (error) {
-    console.error("Lỗi khi xóa container:", error.message);
+    console.error("Error while deleting container:", error.message);
 
     if (error.response?.status === 404) {
       return res.status(404).json({
@@ -207,12 +207,13 @@ const downloadContainer = async(req,res)=>{
   const projectId = req.project.id;
 
   try {
+    // retrieve the list of objects in the container 
     const listRes = await axios.get(`${SWIFT_URL}/AUTH_${projectId}/${containerName}?format=json`, {
       headers: { 'X-Auth-Token': token }
     });
 
     const zip = new JSZip();
-
+    //Download each object individually as binary data
     for (const obj of listRes.data) {
       const fileRes = await axios.get(`${SWIFT_URL}/AUTH_${projectId}/${containerName}/${obj.name}`, {
         headers: { 'X-Auth-Token': token },
@@ -220,10 +221,12 @@ const downloadContainer = async(req,res)=>{
       });
       zip.file(obj.name, fileRes.data);
     }
-
+    // Generate ZIP file as a Node.js buffer
     const zipContent = await zip.generateAsync({ type: "nodebuffer" });
     res.setHeader("Content-Disposition", `attachment; filename=${containerName}.zip`);
     res.setHeader("Content-Type", "application/zip");
+
+    //Send ZIP file to client
     res.send(zipContent);
 
   } catch (error) {

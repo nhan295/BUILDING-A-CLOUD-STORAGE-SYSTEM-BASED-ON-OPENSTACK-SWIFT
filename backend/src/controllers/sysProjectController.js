@@ -34,6 +34,8 @@ const getProject = async (req, res) => {
                 .map(r => r.user.id)
             ),
           ];
+
+          //Đếm số user trong project
           userCount = users.length;
         } catch (err) {
           debug.userCountError = err.message;
@@ -48,11 +50,13 @@ const getProject = async (req, res) => {
 
           debug.attempts.push({ method: 'GET', status: swiftGet.status });
 
+
+        // Nếu lấy thành công, phân tích header để lấy thông tin quota
           if (swiftGet.status === 200) {
             const headers = Object.fromEntries(
               Object.entries(swiftGet.headers).map(([k, v]) => [k.toLowerCase(), v])
             );
-
+            // Phân tích các thông tin quota từ header
             let quotaBytes = parseInt(headers['x-account-meta-quota-bytes']) || 0;
             let bytesUsed = parseInt(headers['x-account-bytes-used']) || 0;
             const containerCount = parseInt(headers['x-account-container-count']) || 0;
@@ -71,6 +75,7 @@ const getProject = async (req, res) => {
                   const head = await axios.head(`${SWIFT_URL}/AUTH_${project.id}/${c.name}`, {
                     headers: { 'X-Auth-Token': token },
                   });
+                  // Cộng dồn bytes_used của từng container
                   totalBytes += parseInt(head.headers['x-container-bytes-used']) || 0;
                 }
 
