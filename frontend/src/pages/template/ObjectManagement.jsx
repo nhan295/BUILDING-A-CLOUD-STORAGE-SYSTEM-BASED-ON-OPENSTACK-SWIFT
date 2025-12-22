@@ -27,6 +27,7 @@ export default function ObjectManagement() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isMoving, setIsMoving] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState([]);
   const [selectedObjects, setSelectedObjects] = useState([]);
   const [showMoveModal, setShowMoveModal] = useState(false);
@@ -310,6 +311,7 @@ export default function ObjectManagement() {
       toast.warn("Cannot move to the same container.");
       return;
     }
+    setIsMoving(true);
 
     try {
       let successCount = 0;
@@ -399,10 +401,12 @@ export default function ObjectManagement() {
       if (failCount > 0) {
         toast.error(`Failed to move ${failCount} file(s).`);
       }
+      setIsMoving(false);
 
     } catch (error) {
       console.error("Error moving files:", error);
       toast.error("An error occurred while moving files!");
+      setIsMoving(false);
     }
   };
 
@@ -591,9 +595,9 @@ export default function ObjectManagement() {
               <button
                 className="fm-btn-confirm"
                 onClick={handleMoveObjects}
-                disabled={!destContainer}
+                disabled={!destContainer || isMoving}
               >
-                Move
+                {isMoving ? 'Moving...' : 'Move'}
               </button>
             </div>
           </div>
